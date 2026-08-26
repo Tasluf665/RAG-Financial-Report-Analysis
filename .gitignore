@@ -1,3 +1,15 @@
+node_modules/
 .env
-.venv
-dbv2
+.env.*.local
+.DS_Store
+coverage/
+dist/
+build/
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+storage/
+dbv2/
+/knowledge/
