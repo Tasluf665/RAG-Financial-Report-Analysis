@@ -1,5 +1,9 @@
 import express from 'express';
 import dotenv from 'dotenv';
+
+// Load environment variables before importing middleware that relies on them
+dotenv.config();
+
 import { authMiddleware, requireAuthentication } from './middleware/auth.middleware';
 import { getMe, updateSettings } from './modules/users/users.controller';
 import { updateSettingsSchema } from './modules/users/users.schema';
@@ -9,17 +13,31 @@ import { errorMiddleware } from './middleware/error.middleware';
 import { uploadMiddleware } from './middleware/upload.middleware';
 import { 
   uploadDocuments, listDocuments, getDocument, getDocumentStatus, 
-  streamDocumentFile, deleteDocument, reprocessDocument 
+  streamDocumentFile, deleteDocument, reprocessDocument,
+  internalUpdateDocumentStatus, internalCompleteDocumentIngestion
 } from './modules/documents/documents.controller';
 import { documentIdParamSchema } from './modules/documents/documents.schema';
 
-dotenv.config();
-
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // 1. Request ID injection
 app.use(requestIdMiddleware);
+
+// Internal Service Authentication Middleware
+const requireInternalToken = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  const token = req.headers['x-internal-service-token'];
+  if (token !== process.env.INTERNAL_SERVICE_TOKEN) {
+    res.status(403).json({ error: 'Forbidden: Invalid internal token' });
+    return;
+  }
+  next();
+};
+
+// Internal Webhooks
+app.patch('/internal/documents/:documentId/status', requireInternalToken, internalUpdateDocumentStatus);
+app.post('/internal/documents/:documentId/complete', requireInternalToken, internalCompleteDocumentIngestion);
 
 // Base Clerk middleware for all API routes (sets req.auth if token exists)
 app.use('/api', authMiddleware);

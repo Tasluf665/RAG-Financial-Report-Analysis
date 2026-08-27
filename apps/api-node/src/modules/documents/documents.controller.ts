@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import { DocumentModel } from './document.model';
 import { ChunkModel } from '../chunks/chunk.model';
 import { storageService } from '../../services/storage.service';
+import { triggerIngestion } from '../../services/ingestion.service';
 import fs from 'fs';
 
 // POST /api/documents (multipart upload)
@@ -31,10 +32,14 @@ export const uploadDocuments = async (req: Request, res: Response): Promise<void
         storagePath,
         mimeType: file.mimetype,
         sizeBytes: file.size,
-        status: 'queued'
+        status: 'queued',
+        processingVersion: 1
       });
 
       uploadedDocuments.push(doc);
+      
+      // Dispatch async ingestion task (don't await)
+      triggerIngestion(documentId.toString(), clerkUserId, storagePath).catch(console.error);
     }
 
     res.status(201).json({ status: 'success', data: uploadedDocuments });
@@ -149,11 +154,84 @@ export const reprocessDocument = async (req: Request, res: Response): Promise<vo
 
     doc.status = 'queued';
     doc.failure = undefined;
+    doc.processingVersion = (doc.processingVersion || 1) + 1;
     await doc.save();
+    
+    // Trigger async processing here (don't await)
+    triggerIngestion(documentId, clerkUserId, doc.storagePath).catch(console.error);
 
     res.json({ status: 'success', data: doc });
   } catch (error) {
     console.error('Error reprocessing document:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// PATCH /internal/documents/:documentId/status
+export const internalUpdateDocumentStatus = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { documentId } = req.params;
+    const { status, failure } = req.body;
+
+    const update: any = { status };
+    if (failure) {
+      update.failure = failure;
+    }
+
+    await DocumentModel.updateOne({ _id: documentId }, update);
+    res.json({ status: 'success' });
+  } catch (error) {
+    console.error('Error updating document status internally:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// POST /internal/documents/:documentId/complete
+export const internalCompleteDocumentIngestion = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { documentId } = req.params;
+    const { chunks, clerkUserId } = req.body;
+
+    const doc = await DocumentModel.findById(documentId);
+    if (!doc) { res.status(404).json({ error: 'Document not found' }); return; }
+
+    const chunksToInsert = chunks.map((chunk: any, index: number) => ({
+      _id: chunk.chunkId,
+      documentId: documentId,
+      clerkUserId: clerkUserId,
+      ordinal: index,
+      type: chunk.type,
+      pageNumber: chunk.pageNumber,
+      content: chunk.content,
+      retrievalSummary: chunk.retrievalSummary,
+      charCount: chunk.content ? chunk.content.length : 0,
+      embedding: {
+        provider: 'openrouter',
+        model: doc.processingConfig?.embeddingModel || 'text-embedding-3-small',
+        status: 'created'
+      },
+      processingVersion: doc.processingVersion || 1
+    }));
+
+    if (chunksToInsert.length > 0) {
+      await ChunkModel.insertMany(chunksToInsert);
+    }
+
+    const maxPage = chunksToInsert.reduce((max: number, chunk: any) => Math.max(max, chunk.pageNumber || 0), 0);
+
+    await DocumentModel.updateOne(
+      { _id: documentId }, 
+      { 
+        status: 'ready',
+        $unset: { failure: 1 },
+        'stats.chunkCount': chunksToInsert.length,
+        pageCount: maxPage
+      }
+    );
+
+    res.json({ status: 'success' });
+  } catch (error) {
+    console.error('Error completing document ingestion internally:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };

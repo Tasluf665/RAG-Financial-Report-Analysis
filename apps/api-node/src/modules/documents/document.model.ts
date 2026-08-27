@@ -8,7 +8,7 @@ export interface IDocument extends MongooseDocument {
   mimeType: string;
   sizeBytes: number;
   pageCount?: number;
-  status: 'uploaded' | 'queued' | 'processing' | 'ready' | 'failed' | 'reprocessing';
+  status: 'uploaded' | 'queued' | 'processing:parsing' | 'processing:chunking' | 'processing:embedding' | 'ready' | 'failed' | 'reprocessing';
   processingVersion: number;
   processingConfig: {
     chunkSize: number;
@@ -42,7 +42,7 @@ const DocumentSchema = new Schema<IDocument>({
   status: { 
     type: String, 
     required: true,
-    enum: ['uploaded', 'queued', 'processing', 'ready', 'failed', 'reprocessing'],
+    enum: ['uploaded', 'queued', 'processing:parsing', 'processing:chunking', 'processing:embedding', 'ready', 'failed', 'reprocessing'],
     default: 'queued'
   },
   processingVersion: { type: Number, default: 1 },

@@ -1,6 +1,7 @@
-import mongoose, { Schema, Document as MongooseDocument } from 'mongoose';
+import mongoose, { Schema, Document } from 'mongoose';
 
-export interface IChunk extends MongooseDocument {
+export interface IChunk extends Document<string> {
+  _id: string;
   documentId: mongoose.Types.ObjectId;
   clerkUserId: string;
   ordinal: number;
@@ -27,6 +28,7 @@ export interface IChunk extends MongooseDocument {
 }
 
 const ChunkSchema = new Schema<IChunk>({
+  _id: { type: String, required: true },
   documentId: { type: Schema.Types.ObjectId, ref: 'Document', required: true },
   clerkUserId: { type: String, required: true },
   ordinal: { type: Number, required: true },

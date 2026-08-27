@@ -5,7 +5,7 @@ export class StorageService {
   private readonly storageRoot: string;
 
   constructor() {
-    this.storageRoot = process.env.LOCAL_STORAGE_ROOT || path.join(process.cwd(), 'storage');
+    this.storageRoot = path.resolve(process.cwd(), process.env.LOCAL_STORAGE_ROOT || 'storage');
   }
 
   private getUserStoragePath(clerkUserId: string): string {
