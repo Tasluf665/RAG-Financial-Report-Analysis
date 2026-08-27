@@ -27,6 +27,7 @@ export function AppLayout() {
   }, [getToken]);
 
   const getPageTitle = () => {
+    if (location.pathname === '/documents') return 'Documents';
     if (location.pathname.startsWith('/documents')) return 'Documents';
     if (location.pathname.startsWith('/chat')) return 'Chat';
     if (location.pathname.startsWith('/settings')) return 'Settings';

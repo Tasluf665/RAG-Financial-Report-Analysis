@@ -3,6 +3,7 @@ import { SignIn, SignUp, SignedIn, SignedOut } from '@clerk/clerk-react'
 import { AuthLayout } from './AuthLayout'
 import { AppLayout } from './components/Layout/AppLayout'
 import { DashboardPage } from './pages/DashboardPage'
+import { DocumentsPage } from './pages/DocumentsPage'
 import { ChunkExplorerPage } from './pages/ChunkExplorerPage'
 
 const clerkAppearance = {
@@ -62,6 +63,7 @@ function App() {
         </SignedIn>
       }>
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/documents" element={<DocumentsPage />} />
         <Route path="/documents/:documentId" element={<ChunkExplorerPage />} />
       </Route>
       
