@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth, UserButton } from '@clerk/clerk-react';
-import { 
-  ChevronRight, Search, FileText, Image as ImageIcon, LayoutGrid, FileType, 
-  MessageSquare, LayoutTemplate, Brain, Database, Bell
+import {
+  ChevronRight, Search, FileText, Image as ImageIcon, LayoutGrid, FileType,
+  MessageSquare, LayoutTemplate, Brain, Database, Bell, Trash2
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import ReactMarkdown from 'react-markdown';
@@ -23,7 +23,7 @@ interface Chunk {
 
 interface DocumentDetail {
   _id: string;
-  originalName: string;
+  originalFilename: string;
   status: string;
   totalPages: number;
   createdAt: string;
@@ -41,21 +41,23 @@ type TabType = 'Extracted Content' | 'AI Summary';
 export function ChunkExplorerPage() {
   const { documentId } = useParams<{ documentId: string }>();
   const { getToken } = useAuth();
+  const navigate = useNavigate();
   const [doc, setDoc] = useState<DocumentDetail | null>(null);
   const [chunks, setChunks] = useState<Chunk[]>([]);
   const [filteredChunks, setFilteredChunks] = useState<Chunk[]>([]);
   const [selectedChunk, setSelectedChunk] = useState<Chunk | null>(null);
   const [loading, setLoading] = useState(true);
-  
+
   const [filter, setFilter] = useState<FilterType>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('Extracted Content');
+  const [deletingDoc, setDeletingDoc] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
       const token = await getToken();
-      
+
       const docRes = await fetch(`/api/documents/${documentId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -103,16 +105,39 @@ export function ChunkExplorerPage() {
     }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      result = result.filter(c => 
-        c.text.toLowerCase().includes(q) || 
+      result = result.filter(c =>
+        c.text.toLowerCase().includes(q) ||
         (c.aiSummary && c.aiSummary.toLowerCase().includes(q))
       );
     }
     setFilteredChunks(result);
   }, [filter, searchQuery, chunks]);
 
+  const handleDeleteDocument = async () => {
+    if (!doc) return;
+    if (!window.confirm(`Delete "${doc.originalFilename}"?\n\nThis will permanently remove the document, all its chunks, and associated data.`)) return;
+    setDeletingDoc(true);
+    try {
+      const token = await getToken();
+      const res = await fetch(`/api/documents/${documentId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        navigate('/dashboard');
+      } else {
+        const body = await res.json().catch(() => ({}));
+        alert(body.error || 'Failed to delete document.');
+        setDeletingDoc(false);
+      }
+    } catch {
+      alert('Network error. Please try again.');
+      setDeletingDoc(false);
+    }
+  };
+
   const getChunkIcon = (type: string) => {
-    switch(type) {
+    switch (type) {
       case 'Text': return <FileType size={16} />;
       case 'Image': return <ImageIcon size={16} />;
       case 'Table': return <LayoutGrid size={16} />;
@@ -130,7 +155,7 @@ export function ChunkExplorerPage() {
         <div className="top-breadcrumb">
           <Link to="/dashboard" className="breadcrumb-link">Documents</Link>
           <ChevronRight size={16} className="breadcrumb-separator" />
-          <span className="breadcrumb-current">{doc.originalName}</span>
+          <span className="breadcrumb-current">{doc.originalFilename}</span>
         </div>
         <div className="top-actions">
           <button className="icon-button"><Bell size={18} /></button>
@@ -143,12 +168,23 @@ export function ChunkExplorerPage() {
         <div className="doc-header-top">
           <div className="doc-title-container">
             <FileText className="doc-title-icon" size={24} />
-            <h1 className="doc-title">{doc.originalName}</h1>
+            <h1 className="doc-title">{doc.originalFilename}</h1>
             <span className="doc-status-badge badge-ready">Ready</span>
           </div>
-          <button className="btn-chat-primary">
-            <MessageSquare size={16} /> Chat with this document
-          </button>
+          <div className="doc-header-actions">
+            <button className="btn-chat-primary">
+              <MessageSquare size={16} /> Chat with this document
+            </button>
+            <button
+              className="btn-delete-doc"
+              onClick={handleDeleteDocument}
+              disabled={deletingDoc}
+              title="Delete this document"
+            >
+              <Trash2 size={16} />
+              {deletingDoc ? 'Deleting…' : 'Delete'}
+            </button>
+          </div>
         </div>
         <div className="doc-subtitle">
           {doc.totalPages || 0} pages · Uploaded {format(new Date(doc.createdAt), 'MMM d, yyyy')} · Last processed {formatDistanceToNow(new Date(doc.updatedAt))} ago
@@ -202,9 +238,9 @@ export function ChunkExplorerPage() {
           <div className="panel-list-header">
             <div className="search-box">
               <Search size={16} className="search-icon" />
-              <input 
-                type="text" 
-                placeholder="Search chunks..." 
+              <input
+                type="text"
+                placeholder="Search chunks..."
                 className="search-input"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -212,8 +248,8 @@ export function ChunkExplorerPage() {
             </div>
             <div className="filter-pills">
               {['All', 'Text', 'Image', 'Table'].map(f => (
-                <button 
-                  key={f} 
+                <button
+                  key={f}
                   className={`pill ${filter === f ? 'active' : ''}`}
                   onClick={() => setFilter(f as FilterType)}
                 >
@@ -224,7 +260,7 @@ export function ChunkExplorerPage() {
           </div>
           <div className="chunk-list">
             {filteredChunks.map(chunk => (
-              <button 
+              <button
                 key={chunk._id}
                 className={`chunk-item ${selectedChunk?._id === chunk._id ? 'active' : ''}`}
                 onClick={() => setSelectedChunk(chunk)}
@@ -273,15 +309,15 @@ export function ChunkExplorerPage() {
                   )}
                 </div>
               </div>
-              
+
               <div className="detail-tabs">
-                <button 
+                <button
                   className={`detail-tab ${activeTab === 'Extracted Content' ? 'active' : ''}`}
                   onClick={() => setActiveTab('Extracted Content')}
                 >
                   Extracted Content
                 </button>
-                <button 
+                <button
                   className={`detail-tab ${activeTab === 'AI Summary' ? 'active' : ''}`}
                   onClick={() => setActiveTab('AI Summary')}
                 >
@@ -296,10 +332,10 @@ export function ChunkExplorerPage() {
                       <div className="visual-preview-container" style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '20px' }}>
                         {selectedChunk.imageBase64 && (
                           <div className="image-preview-container">
-                            <img 
-                              src={`data:image/jpeg;base64,${selectedChunk.imageBase64}`} 
-                              alt={`Chunk ${selectedChunk.chunkIndex}`} 
-                              style={{ maxWidth: '100%', height: 'auto', borderRadius: '8px' }} 
+                            <img
+                              src={`data:image/jpeg;base64,${selectedChunk.imageBase64}`}
+                              alt={`Chunk ${selectedChunk.chunkIndex}`}
+                              style={{ maxWidth: '100%', height: 'auto', borderRadius: '8px' }}
                             />
                           </div>
                         )}
@@ -310,7 +346,7 @@ export function ChunkExplorerPage() {
                         )}
                       </div>
                     )}
-                    
+
                     <div className="extracted-text-box">
                       <div className="box-title-container">
                         <FileType size={16} className="text-secondary" />
@@ -351,7 +387,7 @@ export function ChunkExplorerPage() {
           </div>
           <div className="preview-frame-container">
             {pdfUrl ? (
-              <iframe 
+              <iframe
                 key={selectedChunk ? selectedChunk.pageNumber : 'default'}
                 src={`${pdfUrl}${selectedChunk ? `#page=${selectedChunk.pageNumber}` : ''}`}
                 title="PDF Preview"

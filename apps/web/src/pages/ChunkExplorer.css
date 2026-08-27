@@ -150,6 +150,40 @@
   background-color: #003da8;
 }
 
+/* Doc header action buttons wrapper */
+.doc-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Delete document button in ChunkExplorer header */
+.btn-delete-doc {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+  border: 1px solid #fecaca;
+  background-color: transparent;
+  color: #b91c1c;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.btn-delete-doc:hover:not(:disabled) {
+  background-color: #fee2e2;
+  border-color: #f87171;
+}
+
+.btn-delete-doc:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .doc-subtitle {
   color: #737686;
   font-size: 14px;

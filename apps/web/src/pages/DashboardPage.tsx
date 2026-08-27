@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@clerk/clerk-react';
-import { FileText, Layers, HardDrive, RefreshCw, AlertCircle, CheckCircle2, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { FileText, Layers, HardDrive, RefreshCw, AlertCircle, CheckCircle2, Clock, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { DocumentDropzone } from '../components/Upload/DocumentDropzone';
 import './Dashboard.css';
@@ -35,6 +35,7 @@ export function DashboardPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalDocuments, setTotalDocuments] = useState(0);
   const totalPages = Math.max(1, Math.ceil(totalDocuments / PAGE_SIZE));
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Debounce search; reset to page 1 whenever query changes
   useEffect(() => {
@@ -84,6 +85,32 @@ export function DashboardPage() {
       return () => clearInterval(intervalId);
     }
   }, [documents, fetchDocuments]);
+
+  const handleDelete = async (e: React.MouseEvent, docId: string, filename: string) => {
+    e.stopPropagation();
+    if (!window.confirm(`Delete "${filename}"?\n\nThis will permanently remove the document, all its chunks, and associated data.`)) return;
+    setDeletingId(docId);
+    try {
+      const token = await getToken();
+      const res = await fetch(`/api/documents/${docId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        // If we deleted the last item on a non-first page, go back one page
+        const isLastItemOnPage = documents.length === 1 && currentPage > 1;
+        setCurrentPage(isLastItemOnPage ? currentPage - 1 : currentPage);
+        fetchDocuments();
+      } else {
+        const body = await res.json().catch(() => ({}));
+        alert(body.error || 'Failed to delete document.');
+      }
+    } catch {
+      alert('Network error. Please try again.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -235,16 +262,26 @@ export function DashboardPage() {
                     </td>
                     <td className="text-muted text-sm">{formatDistanceToNow(new Date(doc.createdAt), { addSuffix: true })}</td>
                     <td style={{ textAlign: 'right' }}>
-                      <button
-                        className="btn-primary-sm"
-                        disabled={doc.status !== 'ready'}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (doc.status === 'ready') navigate(`/documents/${doc._id}`);
-                        }}
-                      >
-                        Explore
-                      </button>
+                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                        <button
+                          className="btn-primary-sm"
+                          disabled={doc.status !== 'ready'}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (doc.status === 'ready') navigate(`/documents/${doc._id}`);
+                          }}
+                        >
+                          Explore
+                        </button>
+                        <button
+                          className="btn-danger-sm"
+                          disabled={deletingId === doc._id}
+                          onClick={(e) => handleDelete(e, doc._id, doc.originalFilename)}
+                          title="Delete document"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
