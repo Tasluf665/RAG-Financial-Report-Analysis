@@ -1,10 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@clerk/clerk-react';
-import { FileText, Layers, HardDrive, RefreshCw, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
-import { formatDistanceToNow, format } from 'date-fns';
+import { FileText, Layers, HardDrive, RefreshCw, AlertCircle, CheckCircle2, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 import { DocumentDropzone } from '../components/Upload/DocumentDropzone';
 import './Dashboard.css';
+
+const PAGE_SIZE = 5;
 
 interface Document {
   _id: string;
@@ -29,38 +31,49 @@ export function DashboardPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalDocuments, setTotalDocuments] = useState(0);
+  const totalPages = Math.max(1, Math.ceil(totalDocuments / PAGE_SIZE));
+
+  // Debounce search; reset to page 1 whenever query changes
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      if (searchQuery.length >= 3) {
-        setDebouncedSearch(searchQuery);
-      } else {
-        // If the user clears the input or has < 3 chars, reset the search to show all documents
-        setDebouncedSearch('');
-      }
+      const next = searchQuery.length >= 3 ? searchQuery : '';
+      setDebouncedSearch(next);
+      setCurrentPage(1);
     }, 400);
-
     return () => clearTimeout(timeoutId);
   }, [searchQuery]);
 
   const fetchDocuments = useCallback(async () => {
     try {
       const token = await getToken();
-      const url = debouncedSearch ? `/api/documents?search=${encodeURIComponent(debouncedSearch)}` : '/api/documents';
+      const params = new URLSearchParams({
+        page: String(currentPage),
+        pageSize: String(PAGE_SIZE),
+      });
+      if (debouncedSearch) params.set('search', debouncedSearch);
+      const url = `/api/documents?${params.toString()}`;
       const response = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.ok) {
         const payload = await response.json();
-        setDocuments(payload.data || []);
+        setDocuments(payload.items ?? payload.data ?? []);
+        if (typeof payload.total === 'number') {
+          setTotalDocuments(payload.total);
+        }
       }
     } catch (error) {
       console.error('Failed to fetch documents:', error);
     } finally {
       setLoading(false);
     }
-  }, [getToken, debouncedSearch]);
+  }, [getToken, debouncedSearch, currentPage]);
 
   useEffect(() => {
+    setLoading(true);
     fetchDocuments();
   }, [fetchDocuments]);
 
@@ -106,10 +119,15 @@ export function DashboardPage() {
     return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
-  const totalPages = documents.reduce((sum, doc) => sum + (doc.pageCount || 0), 0);
+  const totalDocPageCount = documents.reduce((sum, doc) => sum + (doc.pageCount || 0), 0);
   const totalChunks = documents.reduce((sum, doc) => sum + (doc.stats?.chunkCount || 0), 0);
   const totalImages = documents.reduce((sum, doc) => sum + (doc.stats?.imageCount || 0), 0);
   const totalTables = documents.reduce((sum, doc) => sum + (doc.stats?.tableCount || 0), 0);
+
+  const handlePrevPage = () => setCurrentPage(p => Math.max(1, p - 1));
+  const handleNextPage = () => setCurrentPage(p => Math.min(totalPages, p + 1));
+  const startItem = totalDocuments === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+  const endItem = Math.min(currentPage * PAGE_SIZE, totalDocuments);
 
   return (
     <div className="dashboard-page">
@@ -131,7 +149,7 @@ export function DashboardPage() {
           </div>
           <div className="metric-content">
             <p className="metric-label">Total Documents</p>
-            <h3 className="metric-value">{documents.length}</h3>
+            <h3 className="metric-value">{totalDocuments}</h3>
           </div>
         </div>
         <div className="metric-card">
@@ -163,7 +181,7 @@ export function DashboardPage() {
         </div>
       </div>
 
-      <DocumentDropzone onUploadComplete={fetchDocuments} />
+      <DocumentDropzone onUploadComplete={() => { setCurrentPage(1); fetchDocuments(); }} />
 
       <div className="document-list">
         <div className="list-header">
@@ -185,52 +203,105 @@ export function DashboardPage() {
 
         {loading ? (
           <div className="list-empty">Loading documents...</div>
-        ) : documents.length === 0 ? (
+        ) : totalDocuments === 0 ? (
           <div className="list-empty">No documents uploaded yet. Upload a PDF above to get started.</div>
         ) : (
-          <table className="doc-table">
-            <thead>
-              <tr>
-                <th>Document Name</th>
-                <th>Pages</th>
-                <th>Chunks</th>
-                <th>Status</th>
-                <th>Uploaded</th>
-                <th style={{ textAlign: 'right' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {documents.map((doc) => (
-                <tr key={doc._id} onClick={() => doc.status === 'ready' && navigate(`/documents/${doc._id}`)} className={doc.status === 'ready' ? 'clickable-row' : ''}>
-                  <td className="doc-name">
-                    <FileText size={16} className="text-muted" />
-                    <span>{doc.originalFilename}</span>
-                  </td>
-                  <td>{doc.pageCount || '-'}</td>
-                  <td>{doc.stats?.chunkCount || '-'}</td>
-                  <td>
-                    <div className={`status-badge ${getStatusBadgeClass(doc.status)}`}>
-                      {getStatusIcon(doc.status)}
-                      <span className="capitalize">{formatStatusText(doc.status)}</span>
-                    </div>
-                  </td>
-                  <td className="text-muted text-sm">{formatDistanceToNow(new Date(doc.createdAt), { addSuffix: true })}</td>
-                  <td style={{ textAlign: 'right' }}>
-                    <button
-                      className="btn-primary-sm"
-                      disabled={doc.status !== 'ready'}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (doc.status === 'ready') navigate(`/documents/${doc._id}`);
-                      }}
-                    >
-                      Explore
-                    </button>
-                  </td>
+          <>
+            <table className="doc-table">
+              <thead>
+                <tr>
+                  <th>Document Name</th>
+                  <th>Pages</th>
+                  <th>Chunks</th>
+                  <th>Status</th>
+                  <th>Uploaded</th>
+                  <th style={{ textAlign: 'right' }}>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {documents.map((doc) => (
+                  <tr key={doc._id} onClick={() => doc.status === 'ready' && navigate(`/documents/${doc._id}`)} className={doc.status === 'ready' ? 'clickable-row' : ''}>
+                    <td className="doc-name">
+                      <FileText size={16} className="text-muted" />
+                      <span>{doc.originalFilename}</span>
+                    </td>
+                    <td>{doc.pageCount || '-'}</td>
+                    <td>{doc.stats?.chunkCount || '-'}</td>
+                    <td>
+                      <div className={`status-badge ${getStatusBadgeClass(doc.status)}`}>
+                        {getStatusIcon(doc.status)}
+                        <span className="capitalize">{formatStatusText(doc.status)}</span>
+                      </div>
+                    </td>
+                    <td className="text-muted text-sm">{formatDistanceToNow(new Date(doc.createdAt), { addSuffix: true })}</td>
+                    <td style={{ textAlign: 'right' }}>
+                      <button
+                        className="btn-primary-sm"
+                        disabled={doc.status !== 'ready'}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (doc.status === 'ready') navigate(`/documents/${doc._id}`);
+                        }}
+                      >
+                        Explore
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* Pagination footer */}
+            <div className="pagination-footer">
+              <span className="pagination-info">
+                Showing {startItem}–{endItem} of {totalDocuments} document{totalDocuments !== 1 ? 's' : ''}
+              </span>
+              <div className="pagination-controls">
+                <button
+                  className="pagination-btn"
+                  onClick={handlePrevPage}
+                  disabled={currentPage <= 1}
+                  aria-label="Previous page"
+                >
+                  <ChevronLeft size={15} />
+                </button>
+
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+                  .reduce<(number | '...')[]>((acc, p, idx, arr) => {
+                    if (idx > 0 && typeof arr[idx - 1] === 'number' && (p as number) - (arr[idx - 1] as number) > 1) {
+                      acc.push('...');
+                    }
+                    acc.push(p);
+                    return acc;
+                  }, [])
+                  .map((item, idx) =>
+                    item === '...' ? (
+                      <span key={`ellipsis-${idx}`} className="pagination-ellipsis">…</span>
+                    ) : (
+                      <button
+                        key={item}
+                        className={`pagination-btn${currentPage === item ? ' pagination-btn-active' : ''}`}
+                        onClick={() => setCurrentPage(item as number)}
+                        aria-label={`Page ${item}`}
+                        aria-current={currentPage === item ? 'page' : undefined}
+                      >
+                        {item}
+                      </button>
+                    )
+                  )}
+
+                <button
+                  className="pagination-btn"
+                  onClick={handleNextPage}
+                  disabled={currentPage >= totalPages}
+                  aria-label="Next page"
+                >
+                  <ChevronRight size={15} />
+                </button>
+              </div>
+            </div>
+          </>
         )}
       </div>
     </div>

@@ -53,8 +53,14 @@ export const uploadDocuments = async (req: Request, res: Response): Promise<void
 export const listDocuments = async (req: Request, res: Response): Promise<void> => {
   try {
     const clerkUserId = (req as any).auth?.userId;
-    const limit = parseInt((req.query.limit as string) || '20', 10);
-    const skip = parseInt((req.query.skip as string) || '0', 10);
+
+    // Support page/pageSize (preferred) or legacy limit/skip
+    const pageSize = parseInt((req.query.pageSize as string) || (req.query.limit as string) || '20', 10);
+    const page = parseInt((req.query.page as string) || '1', 10);
+    const skip = req.query.skip !== undefined
+      ? parseInt(req.query.skip as string, 10)
+      : (page - 1) * pageSize;
+
     const search = req.query.search as string;
 
     const query: any = { clerkUserId };
@@ -63,12 +69,24 @@ export const listDocuments = async (req: Request, res: Response): Promise<void> 
       query.originalFilename = { $regex: search.trim(), $options: 'i' };
     }
 
-    const docs = await DocumentModel.find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
+    const [docs, total] = await Promise.all([
+      DocumentModel.find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(pageSize),
+      DocumentModel.countDocuments(query),
+    ]);
 
-    res.json({ status: 'success', data: docs });
+    res.json({
+      status: 'success',
+      // New paginated shape (architecture standard)
+      items: docs,
+      page,
+      pageSize,
+      total,
+      // Legacy field kept for backward compatibility
+      data: docs,
+    });
   } catch (error) {
     console.error('Error listing documents:', error);
     res.status(500).json({ error: 'Internal server error' });
