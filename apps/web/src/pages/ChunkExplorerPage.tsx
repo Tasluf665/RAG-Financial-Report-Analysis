@@ -352,6 +352,7 @@ export function ChunkExplorerPage() {
           <div className="preview-frame-container">
             {pdfUrl ? (
               <iframe 
+                key={selectedChunk ? selectedChunk.pageNumber : 'default'}
                 src={`${pdfUrl}${selectedChunk ? `#page=${selectedChunk.pageNumber}` : ''}`}
                 title="PDF Preview"
                 className="pdf-iframe"

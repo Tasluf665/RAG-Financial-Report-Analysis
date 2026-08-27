@@ -1,6 +1,7 @@
 import os
 import httpx
 from datetime import datetime
+from typing import Optional
 from .pdf_parser import parse_document
 from .chunking import create_chunks, analyze_chunk_content
 from .enrichment import create_ai_enhanced_summary
@@ -9,7 +10,7 @@ from .vector_store import upsert_vectors, delete_document_vectors
 from ..schemas import IngestionRequest, ChunkManifestItem, IngestionResponse
 from ..config import settings
 
-def send_status_webhook(document_id: str, status: str, failure: dict = None):
+def send_status_webhook(document_id: str, status: str, failure: Optional[dict] = None):
     try:
         # Assumes Node API is running on localhost:4000 
         node_url = "http://127.0.0.1:4000/internal/documents"
