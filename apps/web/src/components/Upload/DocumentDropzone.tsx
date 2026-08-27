@@ -78,7 +78,7 @@ export function DocumentDropzone({ onUploadComplete }: DocumentDropzoneProps) {
   };
 
   return (
-    <div className="dropzone-container">
+    <div className="dropzone-wrapper">
       {error && <div className="dropzone-error">{error}</div>}
       
       <div 
@@ -97,17 +97,29 @@ export function DocumentDropzone({ onUploadComplete }: DocumentDropzoneProps) {
           id="file-upload"
           disabled={isUploading}
         />
-        <label htmlFor="file-upload" className="dropzone-content">
-          <UploadCloud size={48} className="dropzone-icon" />
-          <h3 className="dropzone-title">Drag & drop your PDFs here</h3>
-          <p className="dropzone-text">or click to browse files</p>
+        <div className="dropzone-content">
+          <div className="dropzone-icon-wrapper">
+            <UploadCloud size={24} className="dropzone-icon" />
+          </div>
+          <h3 className="dropzone-title">Drop PDFs here or browse files</h3>
+          <p className="dropzone-subtitle">PDF files only · Maximum 50 MB per file · Upload multiple files</p>
+          
+          <label htmlFor="file-upload" className="dropzone-btn">
+            Browse files
+          </label>
+
+          <div className="dropzone-badge">
+            <span className="badge-icon">✨</span>
+            <span>Files are automatically processed for RAG upon upload</span>
+          </div>
+
           {isUploading && (
             <div className="upload-overlay">
               <div className="upload-spinner"></div>
               <p>Uploading and queuing document...</p>
             </div>
           )}
-        </label>
+        </div>
       </div>
     </div>
   );

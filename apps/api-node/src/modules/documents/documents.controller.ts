@@ -55,8 +55,17 @@ export const listDocuments = async (req: Request, res: Response): Promise<void> 
     const clerkUserId = (req as any).auth?.userId;
     const limit = parseInt((req.query.limit as string) || '20', 10);
     const skip = parseInt((req.query.skip as string) || '0', 10);
+    const search = req.query.search as string;
     
-    const docs = await DocumentModel.find({ clerkUserId })
+    const query: any = { clerkUserId };
+    
+    if (search && search.trim().length > 0) {
+      query.originalFilename = { $regex: search.trim(), $options: 'i' };
+    }
+
+    console.log('listDocuments query:', query, 'search string:', search);
+    
+    const docs = await DocumentModel.find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
@@ -218,6 +227,8 @@ export const internalCompleteDocumentIngestion = async (req: Request, res: Respo
     }
 
     const maxPage = chunksToInsert.reduce((max: number, chunk: any) => Math.max(max, chunk.pageNumber || 0), 0);
+    const imageCount = chunksToInsert.filter((chunk: any) => chunk.type === 'image').length;
+    const tableCount = chunksToInsert.filter((chunk: any) => chunk.type === 'table').length;
 
     await DocumentModel.updateOne(
       { _id: documentId }, 
@@ -225,6 +236,8 @@ export const internalCompleteDocumentIngestion = async (req: Request, res: Respo
         status: 'ready',
         $unset: { failure: 1 },
         'stats.chunkCount': chunksToInsert.length,
+        'stats.imageCount': imageCount,
+        'stats.tableCount': tableCount,
         pageCount: maxPage
       }
     );

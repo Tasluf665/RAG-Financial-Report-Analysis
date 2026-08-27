@@ -1,7 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { SignIn, SignUp, SignedIn, SignedOut } from '@clerk/clerk-react'
 import { AuthLayout } from './AuthLayout'
-import { AppShell } from './components/Layout/AppShell'
+import { AppLayout } from './components/Layout/AppLayout'
 import { DashboardPage } from './pages/DashboardPage'
 import { ChunkExplorerPage } from './pages/ChunkExplorerPage'
 
@@ -58,7 +58,7 @@ function App() {
 
       <Route element={
         <SignedIn>
-          <AppShell />
+          <AppLayout />
         </SignedIn>
       }>
         <Route path="/dashboard" element={<DashboardPage />} />
