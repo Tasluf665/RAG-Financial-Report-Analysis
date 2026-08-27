@@ -1,18 +1,9 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { SignIn, SignUp, SignedIn, SignedOut, UserButton } from '@clerk/clerk-react'
+import { SignIn, SignUp, SignedIn, SignedOut } from '@clerk/clerk-react'
 import { AuthLayout } from './AuthLayout'
-
-function Dashboard() {
-  return (
-    <div style={{ padding: '2rem' }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1>DocuRAG Dashboard</h1>
-        <UserButton />
-      </header>
-      <p>Welcome to your document workspace.</p>
-    </div>
-  )
-}
+import { AppShell } from './components/Layout/AppShell'
+import { DashboardPage } from './pages/DashboardPage'
+import { ChunkExplorerPage } from './pages/ChunkExplorerPage'
 
 const clerkAppearance = {
   elements: {
@@ -65,16 +56,23 @@ function App() {
         </AuthLayout>
       } />
 
-      <Route path="/dashboard" element={
-        <>
-          <SignedIn>
-            <Dashboard />
-          </SignedIn>
-          <SignedOut>
-            <Navigate to="/sign-in" />
-          </SignedOut>
-        </>
-      } />
+      <Route element={
+        <SignedIn>
+          <AppShell />
+        </SignedIn>
+      }>
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/documents/:documentId" element={<ChunkExplorerPage />} />
+      </Route>
+      
+      <Route element={
+        <SignedOut>
+          <Navigate to="/sign-in" replace />
+        </SignedOut>
+      }>
+        <Route path="/dashboard" element={null} />
+        <Route path="/documents/:documentId" element={null} />
+      </Route>
 
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
     </Routes>
