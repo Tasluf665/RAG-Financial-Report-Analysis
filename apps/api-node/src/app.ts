@@ -17,6 +17,18 @@ import {
   internalUpdateDocumentStatus, internalCompleteDocumentIngestion
 } from './modules/documents/documents.controller';
 import { documentIdParamSchema } from './modules/documents/documents.schema';
+import {
+  listConversations,
+  createConversation,
+  getConversation,
+  deleteConversation,
+  createMessage
+} from './modules/chat/chat.controller';
+import {
+  createConversationSchema,
+  conversationIdParamSchema,
+  createMessageSchema
+} from './modules/chat/chat.schema';
 
 const app = express();
 app.use(express.json({ limit: '50mb' }));
@@ -63,6 +75,20 @@ app.get('/api/documents/:documentId/chunks', requireAuthentication, validateDocI
 app.get('/api/documents/:documentId/file', requireAuthentication, validateDocId, streamDocumentFile);
 app.delete('/api/documents/:documentId', requireAuthentication, validateDocId, deleteDocument);
 app.post('/api/documents/:documentId/reprocess', requireAuthentication, validateDocId, reprocessDocument);
+
+// Chat and conversation routes
+const validateConvId = validateRequest(conversationIdParamSchema);
+
+app.get('/api/conversations', requireAuthentication, listConversations);
+app.post('/api/conversations', requireAuthentication, validateRequest(createConversationSchema), createConversation);
+app.get('/api/conversations/:conversationId', requireAuthentication, validateConvId, getConversation);
+app.delete('/api/conversations/:conversationId', requireAuthentication, validateConvId, deleteConversation);
+app.post(
+  '/api/conversations/:conversationId/messages',
+  requireAuthentication,
+  validateRequest(createMessageSchema),
+  createMessage
+);
 
 // 3. Global Error Handler (must be last)
 app.use(errorMiddleware);

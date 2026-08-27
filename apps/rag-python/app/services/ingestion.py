@@ -6,26 +6,25 @@ from .pdf_parser import parse_document
 from .chunking import create_chunks, analyze_chunk_content
 from .enrichment import create_ai_enhanced_summary
 from .embeddings import create_embeddings
-from .vector_store import upsert_vectors, delete_document_vectors
+from .vector_store import upsert_vectors, delete_document_vectors, MAX_METADATA_TEXT_CHARS
 from ..schemas import IngestionRequest, ChunkManifestItem, IngestionResponse
 from ..config import settings
 
 def send_status_webhook(document_id: str, status: str, failure: Optional[dict] = None):
     try:
-        # Assumes Node API is running on localhost:4000 
-        node_url = "http://127.0.0.1:4000/internal/documents"
+        node_url = f"{settings.NODE_API_BASE_URL}/internal/documents"
         httpx.patch(
             f"{node_url}/{document_id}/status",
             json={"status": status, "failure": failure},
             headers={"X-Internal-Service-Token": settings.INTERNAL_SERVICE_TOKEN},
-            timeout=10.0
+            timeout=float(settings.WEBHOOK_TIMEOUT_SECONDS)
         )
     except Exception as e:
         print(f"Failed to send status webhook for {document_id}: {e}")
 
 def send_complete_webhook(document_id: str, chunks: list, clerk_user_id: str):
     try:
-        node_url = "http://127.0.0.1:4000/internal/documents"
+        node_url = f"{settings.NODE_API_BASE_URL}/internal/documents"
         httpx.post(
             f"{node_url}/{document_id}/complete",
             json={
@@ -109,7 +108,7 @@ def process_document(request: IngestionRequest):
                 "processingVersion": request.processingVersion,
                 "type": primary_type,
                 "pageNumber": content_data['page_number'],
-                "text": embedding_text[:8000] # Pinecone metadata size limit safety
+                "text": embedding_text[:MAX_METADATA_TEXT_CHARS]
             })
 
         send_status_webhook(request.documentId, "processing:embedding")

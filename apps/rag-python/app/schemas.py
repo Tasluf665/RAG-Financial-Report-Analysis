@@ -1,5 +1,15 @@
-from pydantic import BaseModel
+"""Pydantic schemas for DocuRAG Python service request/response contracts."""
+
+from __future__ import annotations
+
 from typing import List, Optional
+
+from pydantic import BaseModel, Field
+
+
+# ---------------------------------------------------------------------------
+# Ingestion
+# ---------------------------------------------------------------------------
 
 class IngestionConfig(BaseModel):
     chunkSize: int = 800
@@ -8,12 +18,14 @@ class IngestionConfig(BaseModel):
     summarizeTables: bool = True
     embeddingModel: str = "default"
 
+
 class IngestionRequest(BaseModel):
     documentId: str
     clerkUserId: str
     filePath: str
     processingVersion: int
     config: IngestionConfig
+
 
 class ChunkManifestItem(BaseModel):
     chunkId: str
@@ -24,18 +36,25 @@ class ChunkManifestItem(BaseModel):
     imageBase64: Optional[str] = None
     tableHtml: Optional[str] = None
 
+
 class IngestionResponse(BaseModel):
     status: str
     documentId: str
     chunks: List[ChunkManifestItem]
 
+
+# ---------------------------------------------------------------------------
+# Query
+# ---------------------------------------------------------------------------
+
 class QueryRequest(BaseModel):
     requestId: str
     clerkUserId: str
     documentIds: List[str]
-    question: str
-    answerStyle: str = "balanced"
-    topK: int = 8
+    question: str = Field(..., min_length=1, max_length=2000)
+    answerStyle: str = Field("balanced", pattern="^(concise|balanced|detailed)$")
+    topK: int = Field(8, ge=1, le=20)
+
 
 class SourceCitation(BaseModel):
     citationNumber: int
@@ -47,12 +66,25 @@ class SourceCitation(BaseModel):
     retrievalSummary: Optional[str] = None
     score: float
 
+
 class RetrievalStats(BaseModel):
     retrievedCount: int
     usedCount: int
     model: str
 
+
 class QueryResponse(BaseModel):
     answer: str
     sources: List[SourceCitation]
     retrieval: RetrievalStats
+
+
+# ---------------------------------------------------------------------------
+# Error responses
+# ---------------------------------------------------------------------------
+
+class ServiceError(BaseModel):
+    """Structured error response for internal service failures."""
+    code: str
+    message: str
+    requestId: Optional[str] = None

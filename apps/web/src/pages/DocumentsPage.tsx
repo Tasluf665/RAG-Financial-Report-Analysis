@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@clerk/clerk-react';
 import {
@@ -6,7 +6,7 @@ import {
   UploadCloud, Trash2, Eye, MoreVertical, RefreshCw,
   ChevronLeft, ChevronRight,
 } from 'lucide-react';
-import { formatDistanceToNow, format, isToday, isYesterday } from 'date-fns';
+import { format, isToday, isYesterday } from 'date-fns';
 import './Documents.css';
 
 const PAGE_SIZE = 10;

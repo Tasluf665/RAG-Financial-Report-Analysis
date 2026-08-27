@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@clerk/clerk-react';
 import { FileText, Layers, HardDrive, RefreshCw, AlertCircle, CheckCircle2, Clock, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
@@ -146,7 +146,6 @@ export function DashboardPage() {
     return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
-  const totalDocPageCount = documents.reduce((sum, doc) => sum + (doc.pageCount || 0), 0);
   const totalChunks = documents.reduce((sum, doc) => sum + (doc.stats?.chunkCount || 0), 0);
   const totalImages = documents.reduce((sum, doc) => sum + (doc.stats?.imageCount || 0), 0);
   const totalTables = documents.reduce((sum, doc) => sum + (doc.stats?.tableCount || 0), 0);

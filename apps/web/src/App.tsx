@@ -5,6 +5,7 @@ import { AppLayout } from './components/Layout/AppLayout'
 import { DashboardPage } from './pages/DashboardPage'
 import { DocumentsPage } from './pages/DocumentsPage'
 import { ChunkExplorerPage } from './pages/ChunkExplorerPage'
+import { ChatPage } from './pages/ChatPage'
 
 const clerkAppearance = {
   elements: {
@@ -65,6 +66,7 @@ function App() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/documents" element={<DocumentsPage />} />
         <Route path="/documents/:documentId" element={<ChunkExplorerPage />} />
+        <Route path="/chat" element={<ChatPage />} />
       </Route>
       
       <Route element={

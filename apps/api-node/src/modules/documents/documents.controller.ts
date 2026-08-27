@@ -4,6 +4,7 @@ import { DocumentModel } from './document.model';
 import { ChunkModel } from '../chunks/chunk.model';
 import { storageService } from '../../services/storage.service';
 import { triggerIngestion } from '../../services/ingestion.service';
+import { deleteDocumentVectors } from '../../services/rag-client.service';
 import fs from 'fs';
 
 // POST /api/documents (multipart upload)
@@ -187,6 +188,15 @@ export const deleteDocument = async (req: Request, res: Response): Promise<void>
     const doc = await DocumentModel.findOne({ _id: documentId, clerkUserId });
     if (!doc) { res.status(404).json({ error: 'Document not found' }); return; }
 
+    // 1. Delete Pinecone vectors first (idempotent)
+    try {
+      await deleteDocumentVectors(documentId, (req as any).id);
+    } catch (vectorErr) {
+      console.warn(`Could not delete Pinecone vectors for document ${documentId}:`, vectorErr);
+      // Non-fatal: continue cleaning up MongoDB and filesystem
+    }
+
+    // 2. Delete chunk metadata, storage file, and document record
     await ChunkModel.deleteMany({ documentId: doc._id });
     await storageService.deleteFile(clerkUserId, documentId);
     await DocumentModel.deleteOne({ _id: documentId, clerkUserId });

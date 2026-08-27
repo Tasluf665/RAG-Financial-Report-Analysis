@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { UploadCloud, File as FileIcon, X } from 'lucide-react';
+import { UploadCloud } from 'lucide-react';
 import { useAuth } from '@clerk/clerk-react';
 import './DocumentDropzone.css';
 

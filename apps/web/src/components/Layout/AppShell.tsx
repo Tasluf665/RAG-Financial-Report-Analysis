@@ -1,7 +1,7 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { UserButton, useUser, useAuth } from '@clerk/clerk-react';
-import { FileText, LayoutDashboard, Settings } from 'lucide-react';
+import { LayoutDashboard } from 'lucide-react';
 import './AppShell.css';
 
 export function AppShell() {
