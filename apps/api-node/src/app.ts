@@ -12,7 +12,7 @@ import { requestIdMiddleware } from './middleware/request-id.middleware';
 import { errorMiddleware } from './middleware/error.middleware';
 import { uploadMiddleware } from './middleware/upload.middleware';
 import { 
-  uploadDocuments, listDocuments, getDocument, getDocumentStatus, 
+  uploadDocuments, listDocuments, getDocument, getDocumentStatus, getDocumentChunks,
   streamDocumentFile, deleteDocument, reprocessDocument,
   internalUpdateDocumentStatus, internalCompleteDocumentIngestion
 } from './modules/documents/documents.controller';
@@ -59,6 +59,7 @@ const validateDocId = validateRequest(documentIdParamSchema);
 
 app.get('/api/documents/:documentId', requireAuthentication, validateDocId, getDocument);
 app.get('/api/documents/:documentId/status', requireAuthentication, validateDocId, getDocumentStatus);
+app.get('/api/documents/:documentId/chunks', requireAuthentication, validateDocId, getDocumentChunks);
 app.get('/api/documents/:documentId/file', requireAuthentication, validateDocId, streamDocumentFile);
 app.delete('/api/documents/:documentId', requireAuthentication, validateDocId, deleteDocument);
 app.post('/api/documents/:documentId/reprocess', requireAuthentication, validateDocId, reprocessDocument);

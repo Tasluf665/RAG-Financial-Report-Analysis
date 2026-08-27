@@ -1,8 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useAuth } from '@clerk/clerk-react';
-import { ChevronRight, Search, FileText, Image as ImageIcon, LayoutGrid, FileType } from 'lucide-react';
-import { format } from 'date-fns';
+import { useAuth, UserButton } from '@clerk/clerk-react';
+import { 
+  ChevronRight, Search, FileText, Image as ImageIcon, LayoutGrid, FileType, 
+  MessageSquare, LayoutTemplate, Brain, Database, Bell
+} from 'lucide-react';
+import { format, formatDistanceToNow } from 'date-fns';
+import ReactMarkdown from 'react-markdown';
 import './ChunkExplorer.css';
 
 interface Chunk {
@@ -12,6 +16,9 @@ interface Chunk {
   pageNumber: number;
   text: string;
   aiSummary?: string;
+  imageBase64?: string;
+  tableHtml?: string;
+  embeddingStatus?: string;
 }
 
 interface DocumentDetail {
@@ -21,9 +28,15 @@ interface DocumentDetail {
   totalPages: number;
   createdAt: string;
   updatedAt: string;
+  stats?: {
+    chunkCount: number;
+    imageCount: number;
+    tableCount: number;
+  };
 }
 
 type FilterType = 'All' | 'Text' | 'Image' | 'Table';
+type TabType = 'Extracted Content' | 'AI Summary';
 
 export function ChunkExplorerPage() {
   const { documentId } = useParams<{ documentId: string }>();
@@ -37,6 +50,7 @@ export function ChunkExplorerPage() {
   const [filter, setFilter] = useState<FilterType>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TabType>('Extracted Content');
 
   const fetchData = useCallback(async () => {
     try {
@@ -47,7 +61,7 @@ export function ChunkExplorerPage() {
       });
       if (docRes.ok) {
         const data = await docRes.json();
-        setDoc(data.document);
+        setDoc(data.data);
       }
 
       const chunksRes = await fetch(`/api/documents/${documentId}/chunks`, {
@@ -111,30 +125,77 @@ export function ChunkExplorerPage() {
 
   return (
     <div className="chunk-explorer-page">
-      <div className="explorer-header">
-        <div className="breadcrumb">
+      {/* Top App Bar */}
+      <div className="top-app-bar">
+        <div className="top-breadcrumb">
           <Link to="/dashboard" className="breadcrumb-link">Documents</Link>
           <ChevronRight size={16} className="breadcrumb-separator" />
           <span className="breadcrumb-current">{doc.originalName}</span>
         </div>
-      </div>
-      
-      <div className="doc-meta-header">
-        <div className="meta-left">
-          <FileText className="meta-icon text-primary" size={24} />
-          <h1 className="meta-title">{doc.originalName}</h1>
-          <span className="meta-status badge-success">Ready</span>
-        </div>
-        <div className="meta-right">
-          <span className="meta-subtitle">
-            {doc.totalPages || 0} pages · Uploaded {format(new Date(doc.createdAt), 'MMM d, yyyy')}
-          </span>
-          <button className="btn-chat">
-            <LayoutGrid size={16} /> Chat with this document
-          </button>
+        <div className="top-actions">
+          <button className="icon-button"><Bell size={18} /></button>
+          <UserButton afterSignOutUrl="/sign-in" />
         </div>
       </div>
 
+      {/* Document Header Area */}
+      <div className="doc-header-area">
+        <div className="doc-header-top">
+          <div className="doc-title-container">
+            <FileText className="doc-title-icon" size={24} />
+            <h1 className="doc-title">{doc.originalName}</h1>
+            <span className="doc-status-badge badge-ready">Ready</span>
+          </div>
+          <button className="btn-chat-primary">
+            <MessageSquare size={16} /> Chat with this document
+          </button>
+        </div>
+        <div className="doc-subtitle">
+          {doc.totalPages || 0} pages · Uploaded {format(new Date(doc.createdAt), 'MMM d, yyyy')} · Last processed {formatDistanceToNow(new Date(doc.updatedAt))} ago
+        </div>
+
+        {/* Stat Cards */}
+        <div className="stat-cards-container">
+          <div className="stat-card">
+            <div className="stat-icon-wrapper stat-icon-blue">
+              <LayoutTemplate size={20} className="text-primary" />
+            </div>
+            <div className="stat-content">
+              <h3 className="stat-value">{doc.stats?.chunkCount || 0}</h3>
+              <p className="stat-label">Total Chunks</p>
+            </div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon-wrapper stat-icon-blue">
+              <ImageIcon size={18} className="text-primary" />
+            </div>
+            <div className="stat-content">
+              <h3 className="stat-value">{doc.stats?.imageCount || 0}</h3>
+              <p className="stat-label">Images</p>
+            </div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon-wrapper stat-icon-blue">
+              <LayoutGrid size={18} className="text-primary" />
+            </div>
+            <div className="stat-content">
+              <h3 className="stat-value">{doc.stats?.tableCount || 0}</h3>
+              <p className="stat-label">Tables</p>
+            </div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon-wrapper stat-icon-blue">
+              <Database size={20} className="text-primary" />
+            </div>
+            <div className="stat-content">
+              <h3 className="stat-value" style={{ fontSize: '16px', lineHeight: '24px' }}>Embeddings</h3>
+              <p className="stat-label">Generated</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Three Panel Layout */}
       <div className="explorer-panels">
         {/* Panel 1: Chunk List */}
         <div className="panel panel-list">
@@ -180,6 +241,7 @@ export function ChunkExplorerPage() {
                     {chunk.aiSummary ? chunk.aiSummary.substring(0, 50) + '...' : chunk.text.substring(0, 50) + '...'}
                   </div>
                 </div>
+                {selectedChunk?._id === chunk._id && <div className="chunk-item-active-border" />}
               </button>
             ))}
             {filteredChunks.length === 0 && (
@@ -191,26 +253,90 @@ export function ChunkExplorerPage() {
         {/* Panel 2: Chunk Detail */}
         <div className="panel panel-detail">
           {selectedChunk ? (
-            <div className="detail-content">
-              <h2 className="detail-title">Chunk {selectedChunk.chunkIndex}</h2>
-              <div className="detail-tags">
-                <span className="tag"><FileType size={14} /> {selectedChunk.type}</span>
-                <span className="tag">Page {selectedChunk.pageNumber}</span>
-                {selectedChunk.aiSummary && <span className="tag tag-ai">AI Summarized</span>}
+            <div className="detail-container">
+              <div className="detail-header-top">
+                <h2 className="detail-title">Chunk {selectedChunk.chunkIndex}</h2>
+                <div className="detail-tags">
+                  <span className="detail-tag tag-type">
+                    {getChunkIcon(selectedChunk.type)} {selectedChunk.type}
+                  </span>
+                  <span className="detail-tag tag-page">
+                    <FileText size={12} /> Page {selectedChunk.pageNumber}
+                  </span>
+                  <span className="detail-tag tag-embed">
+                    <Database size={12} /> Embedded
+                  </span>
+                  {selectedChunk.aiSummary && (
+                    <span className="detail-tag tag-ai">
+                      <Brain size={12} /> AI Summarized
+                    </span>
+                  )}
+                </div>
               </div>
               
+              <div className="detail-tabs">
+                <button 
+                  className={`detail-tab ${activeTab === 'Extracted Content' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('Extracted Content')}
+                >
+                  Extracted Content
+                </button>
+                <button 
+                  className={`detail-tab ${activeTab === 'AI Summary' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('AI Summary')}
+                >
+                  AI Summary
+                </button>
+              </div>
+
               <div className="detail-body">
-                {selectedChunk.aiSummary && (
-                  <div className="ai-summary-box">
-                    <h4 className="box-title">AI Summary</h4>
-                    <p>{selectedChunk.aiSummary}</p>
+                {activeTab === 'Extracted Content' && (
+                  <div className="extracted-content-view">
+                    {(selectedChunk.imageBase64 || selectedChunk.tableHtml) && (
+                      <div className="visual-preview-container" style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '20px' }}>
+                        {selectedChunk.imageBase64 && (
+                          <div className="image-preview-container">
+                            <img 
+                              src={`data:image/jpeg;base64,${selectedChunk.imageBase64}`} 
+                              alt={`Chunk ${selectedChunk.chunkIndex}`} 
+                              style={{ maxWidth: '100%', height: 'auto', borderRadius: '8px' }} 
+                            />
+                          </div>
+                        )}
+                        {selectedChunk.tableHtml && (
+                          <div className="table-preview-container" style={{ overflowX: 'auto', background: '#fff', padding: '16px', borderRadius: '8px', border: '1px solid #c3c6d7' }}>
+                            <div dangerouslySetInnerHTML={{ __html: selectedChunk.tableHtml }} />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    <div className="extracted-text-box">
+                      <div className="box-title-container">
+                        <FileType size={16} className="text-secondary" />
+                        <h4 className="box-title">Raw Content Payload</h4>
+                      </div>
+                      <pre className="raw-text">{selectedChunk.text}</pre>
+                    </div>
                   </div>
                 )}
-                
-                <div className="extracted-text-box">
-                  <h4 className="box-title">Extracted Raw Text</h4>
-                  <pre className="raw-text">{selectedChunk.text}</pre>
-                </div>
+                {activeTab === 'AI Summary' && (
+                  <div className="ai-summary-view">
+                    {selectedChunk.aiSummary ? (
+                      <div className="ai-summary-box">
+                        <div className="box-title-container">
+                          <Brain size={16} className="text-primary" />
+                          <h4 className="box-title">AI Summary for Retrieval</h4>
+                        </div>
+                        <div className="markdown-content">
+                          <ReactMarkdown>{selectedChunk.aiSummary}</ReactMarkdown>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-muted text-sm" style={{ padding: '20px' }}>No AI summary generated for this chunk. Text-only chunks are embedded directly.</p>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           ) : (
@@ -239,3 +365,4 @@ export function ChunkExplorerPage() {
     </div>
   );
 }
+

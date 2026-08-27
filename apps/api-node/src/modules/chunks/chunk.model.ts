@@ -9,6 +9,8 @@ export interface IChunk extends Document<string> {
   pageNumber: number;
   content: string;
   retrievalSummary?: string;
+  imageBase64?: string;
+  tableHtml?: string;
   assetPath?: string;
   sourceLocation?: {
     x: number;
@@ -36,6 +38,8 @@ const ChunkSchema = new Schema<IChunk>({
   pageNumber: { type: Number, required: true },
   content: { type: String, required: true },
   retrievalSummary: { type: String },
+  imageBase64: { type: String },
+  tableHtml: { type: String },
   assetPath: { type: String },
   sourceLocation: {
     x: { type: Number },

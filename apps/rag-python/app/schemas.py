@@ -21,6 +21,8 @@ class ChunkManifestItem(BaseModel):
     type: str
     content: str
     retrievalSummary: Optional[str] = None
+    imageBase64: Optional[str] = None
+    tableHtml: Optional[str] = None
 
 class IngestionResponse(BaseModel):
     status: str

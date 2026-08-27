@@ -38,7 +38,7 @@ export function DashboardPage() {
         setDebouncedSearch('');
       }
     }, 400);
-    
+
     return () => clearTimeout(timeoutId);
   }, [searchQuery]);
 
@@ -46,7 +46,6 @@ export function DashboardPage() {
     try {
       const token = await getToken();
       const url = debouncedSearch ? `/api/documents?search=${encodeURIComponent(debouncedSearch)}` : '/api/documents';
-      console.log('Fetching documents with URL:', url);
       const response = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -74,7 +73,7 @@ export function DashboardPage() {
   }, [documents, fetchDocuments]);
 
   const getStatusIcon = (status: string) => {
-    switch(status) {
+    switch (status) {
       case 'ready': return <CheckCircle2 size={16} className="text-success" />;
       case 'failed': return <AlertCircle size={16} className="text-error" />;
       case 'queued':
@@ -87,7 +86,7 @@ export function DashboardPage() {
   };
 
   const getStatusBadgeClass = (status: string) => {
-    switch(status) {
+    switch (status) {
       case 'ready': return 'badge-success';
       case 'failed': return 'badge-error';
       case 'queued':
@@ -171,10 +170,10 @@ export function DashboardPage() {
           <h2 className="list-title">Recent documents</h2>
           <div className="list-toolbar-actions">
             <div className="search-input-wrapper">
-              <input 
-                type="text" 
-                className="search-input" 
-                placeholder="Search..." 
+              <input
+                type="text"
+                className="search-input"
+                placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -183,7 +182,7 @@ export function DashboardPage() {
             <button className="btn-icon"><HardDrive size={16} /></button>
           </div>
         </div>
-        
+
         {loading ? (
           <div className="list-empty">Loading documents...</div>
         ) : documents.length === 0 ? (
@@ -217,7 +216,7 @@ export function DashboardPage() {
                   </td>
                   <td className="text-muted text-sm">{formatDistanceToNow(new Date(doc.createdAt), { addSuffix: true })}</td>
                   <td style={{ textAlign: 'right' }}>
-                    <button 
+                    <button
                       className="btn-primary-sm"
                       disabled={doc.status !== 'ready'}
                       onClick={(e) => {

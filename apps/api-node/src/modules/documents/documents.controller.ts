@@ -37,7 +37,7 @@ export const uploadDocuments = async (req: Request, res: Response): Promise<void
       });
 
       uploadedDocuments.push(doc);
-      
+
       // Dispatch async ingestion task (don't await)
       triggerIngestion(documentId.toString(), clerkUserId, storagePath).catch(console.error);
     }
@@ -56,20 +56,18 @@ export const listDocuments = async (req: Request, res: Response): Promise<void> 
     const limit = parseInt((req.query.limit as string) || '20', 10);
     const skip = parseInt((req.query.skip as string) || '0', 10);
     const search = req.query.search as string;
-    
+
     const query: any = { clerkUserId };
-    
+
     if (search && search.trim().length > 0) {
       query.originalFilename = { $regex: search.trim(), $options: 'i' };
     }
 
-    console.log('listDocuments query:', query, 'search string:', search);
-    
     const docs = await DocumentModel.find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
-      
+
     res.json({ status: 'success', data: docs });
   } catch (error) {
     console.error('Error listing documents:', error);
@@ -105,6 +103,36 @@ export const getDocumentStatus = async (req: Request, res: Response): Promise<vo
     res.json({ status: 'success', data: doc });
   } catch (error) {
     console.error('Error getting document status:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// GET /api/documents/:documentId/chunks
+export const getDocumentChunks = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const clerkUserId = (req as any).auth?.userId;
+    const { documentId } = req.params;
+
+    const doc = await DocumentModel.findOne({ _id: documentId, clerkUserId });
+    if (!doc) { res.status(404).json({ error: 'Document not found' }); return; }
+
+    const chunks = await ChunkModel.find({ documentId: doc._id }).sort({ ordinal: 1 });
+    
+    const formattedChunks = chunks.map(chunk => ({
+      _id: chunk._id,
+      chunkIndex: chunk.ordinal,
+      type: chunk.type === 'image' ? 'Image' : chunk.type === 'table' ? 'Table' : 'Text',
+      pageNumber: chunk.pageNumber,
+      text: chunk.content,
+      aiSummary: chunk.retrievalSummary,
+      imageBase64: chunk.imageBase64,
+      tableHtml: chunk.tableHtml,
+      embeddingStatus: chunk.embedding?.status
+    }));
+
+    res.json({ status: 'success', chunks: formattedChunks });
+  } catch (error) {
+    console.error('Error getting document chunks:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -165,7 +193,7 @@ export const reprocessDocument = async (req: Request, res: Response): Promise<vo
     doc.failure = undefined;
     doc.processingVersion = (doc.processingVersion || 1) + 1;
     await doc.save();
-    
+
     // Trigger async processing here (don't await)
     triggerIngestion(documentId, clerkUserId, doc.storagePath).catch(console.error);
 
@@ -213,6 +241,8 @@ export const internalCompleteDocumentIngestion = async (req: Request, res: Respo
       pageNumber: chunk.pageNumber,
       content: chunk.content,
       retrievalSummary: chunk.retrievalSummary,
+      imageBase64: chunk.imageBase64,
+      tableHtml: chunk.tableHtml,
       charCount: chunk.content ? chunk.content.length : 0,
       embedding: {
         provider: 'openrouter',
@@ -231,8 +261,8 @@ export const internalCompleteDocumentIngestion = async (req: Request, res: Respo
     const tableCount = chunksToInsert.filter((chunk: any) => chunk.type === 'table').length;
 
     await DocumentModel.updateOne(
-      { _id: documentId }, 
-      { 
+      { _id: documentId },
+      {
         status: 'ready',
         $unset: { failure: 1 },
         'stats.chunkCount': chunksToInsert.length,

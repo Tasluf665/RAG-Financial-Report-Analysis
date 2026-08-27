@@ -8,7 +8,7 @@ export const triggerIngestion = async (documentId: string, clerkUserId: string, 
     const config = user?.settings || {
       chunkSize: 800,
       chunkOverlap: 120,
-      summarizeImages: false,
+      summarizeImages: true,
       summarizeTables: true,
       embeddingModel: 'default'
     };

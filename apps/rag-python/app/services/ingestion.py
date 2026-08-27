@@ -95,7 +95,9 @@ def process_document(request: IngestionRequest):
                 pageNumber=content_data['page_number'],
                 type=primary_type,
                 content=content_data['text'],
-                retrievalSummary=retrieval_summary
+                retrievalSummary=retrieval_summary,
+                imageBase64=content_data['images'][0] if content_data['images'] else None,
+                tableHtml=content_data['tables'][0] if content_data['tables'] else None
             ))
             
             texts_to_embed.append(embedding_text)

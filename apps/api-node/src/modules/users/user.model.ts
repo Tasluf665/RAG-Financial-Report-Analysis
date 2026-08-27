@@ -30,7 +30,7 @@ const UserSettingsSchema = new Schema<IUserSettings>({
   showRetrievalScores: { type: Boolean, default: false },
   chunkSize: { type: Number, default: 1000 },
   chunkOverlap: { type: Number, default: 200 },
-  summarizeImages: { type: Boolean, default: false },
+  summarizeImages: { type: Boolean, default: true },
   summarizeTables: { type: Boolean, default: true },
   embeddingModel: { type: String, default: 'default' }
 }, { _id: false });
