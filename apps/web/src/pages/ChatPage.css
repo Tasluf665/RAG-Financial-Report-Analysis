@@ -26,7 +26,7 @@
 }
 
 .chat-header-title {
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: "Plus Jakarta Sans", sans-serif;
   font-weight: 700;
   font-size: 32px;
   line-height: 40px;
@@ -36,7 +36,7 @@
 }
 
 .chat-header-subtitle {
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   font-weight: 400;
   font-size: 16px;
   line-height: 24px;
@@ -315,12 +315,98 @@
   word-break: break-word;
 }
 
-.assistant-bubble p {
+.markdown-content {
+  color: #0b1c30;
+}
+
+.markdown-content p {
   margin: 0 0 10px 0;
 }
 
-.assistant-bubble p:last-child {
+.markdown-content p:last-child {
   margin-bottom: 0;
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4 {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  line-height: 1.35;
+  margin: 18px 0 8px;
+}
+
+.markdown-content h1:first-child,
+.markdown-content h2:first-child,
+.markdown-content h3:first-child,
+.markdown-content h4:first-child {
+  margin-top: 0;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  margin: 8px 0 12px;
+  padding-left: 24px;
+}
+
+.markdown-content li {
+  margin: 4px 0;
+  padding-left: 4px;
+}
+
+.markdown-content blockquote {
+  border-left: 3px solid #93c5fd;
+  color: #434655;
+  margin: 12px 0;
+  padding: 2px 0 2px 14px;
+}
+
+.markdown-content pre {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  margin: 12px 0;
+  overflow-x: auto;
+  padding: 12px;
+}
+
+.markdown-content code {
+  background: #f1f5f9;
+  border-radius: 4px;
+  font-size: 0.9em;
+  padding: 2px 4px;
+}
+
+.markdown-content pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.markdown-content table {
+  border-collapse: collapse;
+  display: block;
+  margin: 12px 0;
+  max-width: 100%;
+  overflow-x: auto;
+  width: max-content;
+}
+
+.markdown-content th,
+.markdown-content td {
+  border: 1px solid #c3c6d7;
+  padding: 7px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.markdown-content th {
+  background: #f8f9ff;
+  font-weight: 700;
+}
+
+.markdown-content a:not(.inline-citation) {
+  color: #004ac6;
+  text-decoration: underline;
 }
 
 /* Citation markers */
@@ -339,7 +425,9 @@
   vertical-align: 2px;
   cursor: pointer;
   border: none;
-  transition: transform 0.15s ease, background 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease;
 }
 
 .inline-citation:hover {
@@ -428,12 +516,24 @@
   animation: bounce 1.4s infinite ease-in-out both;
 }
 
-.bouncing-dots div:nth-child(1) { animation-delay: -0.32s; }
-.bouncing-dots div:nth-child(2) { animation-delay: -0.16s; }
+.bouncing-dots div:nth-child(1) {
+  animation-delay: -0.32s;
+}
+.bouncing-dots div:nth-child(2) {
+  animation-delay: -0.16s;
+}
 
 @keyframes bounce {
-  0%, 80%, 100% { transform: scale(0); opacity: 0.3; }
-  40% { transform: scale(1); opacity: 1; }
+  0%,
+  80%,
+  100% {
+    transform: scale(0);
+    opacity: 0.3;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 /* Chat Input Area */
@@ -537,7 +637,7 @@
 }
 
 .sources-panel-title {
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: "Plus Jakarta Sans", sans-serif;
   font-weight: 700;
   font-size: 20px;
   color: #0b1c30;
@@ -730,7 +830,9 @@
   max-height: 85vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0px 20px 25px -5px rgba(0, 0, 0, 0.1), 0px 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0px 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0px 10px 10px -5px rgba(0, 0, 0, 0.04);
   overflow: hidden;
 }
 
@@ -743,7 +845,7 @@
 }
 
 .modal-header h3 {
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: "Plus Jakarta Sans", sans-serif;
   font-size: 18px;
   font-weight: 700;
   color: #0b1c30;

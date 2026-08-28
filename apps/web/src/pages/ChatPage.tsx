@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@clerk/clerk-react';
+import ReactMarkdown from 'react-markdown';
 import {
   MessageSquare, Plus, Trash2, Send, Sparkles, FileText,
   Check, Copy, RefreshCw, ThumbsUp, ThumbsDown, Eye,
@@ -54,6 +55,17 @@ const STARTER_PROMPTS = [
   'Compare the proposed architecture approaches.',
   'Summarize key findings.'
 ];
+
+const normalizeCitations = (citations?: Citation[]) =>
+  citations?.map((citation, index) => ({
+    ...citation,
+    citationNumber: citation.citationNumber || index + 1
+  }));
+
+const normalizeMessage = (message: Message): Message => ({
+  ...message,
+  citations: normalizeCitations(message.citations)
+});
 
 export function ChatPage() {
   const { getToken } = useAuth();
@@ -150,7 +162,7 @@ export function ChatPage() {
         });
         if (res.ok) {
           const data = await res.json();
-          setMessages(data.data.messages || []);
+          setMessages((data.data.messages || []).map(normalizeMessage));
         }
       } catch (err) {
         console.error('Failed to load messages for conversation:', err);
@@ -271,7 +283,7 @@ export function ChatPage() {
         const assistantMsg: Message = {
           role: 'assistant',
           content: data.data.assistantMessage.content,
-          citations: data.data.assistantMessage.citations,
+          citations: normalizeCitations(data.data.assistantMessage.citations),
           retrieval: data.data.retrieval
         };
         setMessages(prev => [...prev, assistantMsg]);
@@ -308,41 +320,51 @@ export function ChatPage() {
     return found ? found.originalFilename : docId;
   };
 
-  // Render assistant content with interactive citation badges
+  // Convert citation markers to internal links so markdown can render around them.
+  const prepareMarkdown = (content: string) => content.replace(/\[(\d+)\](?!\()/g, '[$1](#citation-$1)');
+
+  // Render assistant content as markdown while keeping citations interactive.
   const renderFormattedContent = (content: string, citations?: Citation[]) => {
     if (!citations || citations.length === 0) {
-      return <div className="text-content">{content}</div>;
+      return (
+        <div className="markdown-content">
+          <ReactMarkdown>{content}</ReactMarkdown>
+        </div>
+      );
     }
 
-    // Split on citation markers like [1], [2], etc.
-    const parts = content.split(/(\[\d+\])/g);
-
     return (
-      <div className="text-content">
-        {parts.map((part, idx) => {
-          const match = part.match(/^\[(\d+)\]$/);
-          if (match) {
-            const num = parseInt(match[1], 10);
-            const matchingCitation = citations.find(c => c.citationNumber === num);
+      <div className="markdown-content">
+        <ReactMarkdown
+          components={{
+            a: ({ href, children, ...props }) => {
+              const citationMatch = href?.match(/^#citation-(\d+)$/);
+              if (!citationMatch) {
+                return <a href={href} {...props}>{children}</a>;
+              }
 
-            return (
-              <button
-                key={idx}
-                className="inline-citation"
-                title={matchingCitation ? `Source ${num}: ${getDocName(matchingCitation.documentId)} (p. ${matchingCitation.pageNumber})` : `Source ${num}`}
-                onClick={() => {
-                  if (matchingCitation) {
-                    setActiveCitation(matchingCitation);
-                    setSelectedSourceDetail(matchingCitation);
-                  }
-                }}
-              >
-                {num}
-              </button>
-            );
-          }
-          return <span key={idx}>{part}</span>;
-        })}
+              const num = parseInt(citationMatch[1], 10);
+              const matchingCitation = citations.find(c => c.citationNumber === num);
+              return (
+                <button
+                  type="button"
+                  className="inline-citation"
+                  title={matchingCitation ? `Source ${num}: ${getDocName(matchingCitation.documentId)} (p. ${matchingCitation.pageNumber})` : `Source ${num}`}
+                  onClick={() => {
+                    if (matchingCitation) {
+                      setActiveCitation(matchingCitation);
+                      setSelectedSourceDetail(matchingCitation);
+                    }
+                  }}
+                >
+                  {num}
+                </button>
+              );
+            }
+          }}
+        >
+          {prepareMarkdown(content)}
+        </ReactMarkdown>
       </div>
     );
   };

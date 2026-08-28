@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document as MongooseDocument } from 'mongoose';
 
 export interface ICitation {
+  citationNumber?: number;
   documentId: string;
   chunkId: string;
   pageNumber: number;
@@ -19,6 +20,7 @@ export interface IMessage extends MongooseDocument {
 }
 
 const CitationSchema = new Schema<ICitation>({
+  citationNumber: { type: Number },
   documentId: { type: String, required: true },
   chunkId: { type: String, required: true },
   pageNumber: { type: Number, required: true },
