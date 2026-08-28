@@ -1192,3 +1192,157 @@
   height: 16px;
   cursor: pointer;
 }
+
+@media (max-width: 1024px) {
+  .chat-page {
+    padding: 0 0 24px;
+  }
+
+  .chat-header-area {
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .chat-scope-box {
+    max-width: none;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .chat-main-panel,
+  .chat-sources-panel {
+    height: 680px;
+  }
+
+  .chat-two-panel {
+    gap: 16px;
+    min-height: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .chat-page {
+    gap: 16px;
+    padding-bottom: 16px;
+  }
+
+  .chat-header-title {
+    font-size: 28px;
+    line-height: 36px;
+  }
+
+  .chat-header-subtitle {
+    font-size: 14px;
+    line-height: 20px;
+  }
+
+  .chat-scope-box {
+    padding: 12px;
+  }
+
+  .chat-scope-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .chat-scope-pills {
+    max-height: 76px;
+    overflow-y: auto;
+  }
+
+  .chat-main-panel {
+    height: min(680px, calc(100vh - 190px));
+    min-height: 520px;
+  }
+
+  .chat-sources-panel {
+    height: auto;
+    max-height: none;
+    min-height: 420px;
+    padding: 16px;
+  }
+
+  .chat-panel-topbar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 16px;
+  }
+
+  .chat-conv-selector {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .conv-select-dropdown {
+    max-width: none;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .btn-new-chat {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .chat-messages-container {
+    padding: 16px;
+  }
+
+  .user-bubble {
+    max-width: 88%;
+  }
+
+  .message-row-assistant {
+    gap: 8px;
+  }
+
+  .assistant-bubble {
+    padding: 14px 16px;
+  }
+
+  .assistant-action-bar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .action-bar-left {
+    font-size: 12px;
+  }
+
+  .action-bar-right {
+    flex-wrap: wrap;
+  }
+
+  .btn-view-retrieval span {
+    display: none;
+  }
+
+  .chat-input-area {
+    padding: 12px 16px;
+  }
+
+  .chat-input-footnote {
+    align-items: flex-start;
+    font-size: 11px;
+    line-height: 16px;
+  }
+
+  .source-card-top {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .source-doc-name {
+    max-width: 220px;
+  }
+
+  .modal-overlay {
+    padding: 10px;
+  }
+
+  .modal-content {
+    max-height: 94vh;
+  }
+}
