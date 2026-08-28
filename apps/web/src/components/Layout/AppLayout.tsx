@@ -10,7 +10,16 @@ export function AppLayout() {
   const { getToken } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth > 1024);
+
+  React.useEffect(() => {
+    const handleViewportChange = () => {
+      setIsSidebarOpen(window.innerWidth > 1024);
+    };
+
+    window.addEventListener('resize', handleViewportChange);
+    return () => window.removeEventListener('resize', handleViewportChange);
+  }, []);
   const [isUploadOpen, setIsUploadOpen] = useState(false);
 
   React.useEffect(() => {
@@ -40,7 +49,7 @@ export function AppLayout() {
   return (
     <div className="app-layout">
       {/* Sidebar */}
-      <aside className={`app-sidebar ${!isSidebarOpen ? 'collapsed' : ''}`}>
+      <aside className={`app-sidebar ${!isSidebarOpen ? 'collapsed' : 'is-open'}`}>
         <div className="sidebar-header">
           <h1 className="logo-title">DocuRAG</h1>
           <span className="logo-subtitle">EXPERT INTELLIGENCE</span>
@@ -79,12 +88,26 @@ export function AppLayout() {
         </div>
       </aside>
 
+      {isSidebarOpen && (
+        <button
+          type="button"
+          className="sidebar-drawer-backdrop"
+          aria-label="Close navigation menu"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* Main Content Area */}
       <div className="app-main">
         {/* Top Bar */}
         <header className="app-topbar">
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', color: '#434655' }}>
+            <button
+              type="button"
+              aria-label={isSidebarOpen ? 'Close navigation menu' : 'Open navigation menu'}
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', color: '#434655' }}
+            >
               <Menu size={20} />
             </button>
             <h2 className="topbar-title">{getPageTitle()}</h2>
