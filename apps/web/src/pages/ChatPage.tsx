@@ -50,6 +50,17 @@ interface DocumentItem {
   pageCount?: number;
 }
 
+type SourceDetailTab = 'extracted' | 'summary';
+
+interface SourceChunk {
+  _id: string;
+  text: string;
+  aiSummary?: string;
+  retrievalSummary?: string;
+  imageBase64?: string;
+  tableHtml?: string;
+}
+
 const STARTER_PROMPTS = [
   'What are the highest-priority sustainability requirements?',
   'Compare the proposed architecture approaches.',
@@ -88,6 +99,10 @@ export function ChatPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeCitation, setActiveCitation] = useState<Citation | null>(null);
   const [selectedSourceDetail, setSelectedSourceDetail] = useState<Citation | null>(null);
+  const [sourcePdfUrl, setSourcePdfUrl] = useState<string | null>(null);
+  const [sourceChunk, setSourceChunk] = useState<SourceChunk | null>(null);
+  const [sourceChunkLoading, setSourceChunkLoading] = useState(false);
+  const [sourceDetailTab, setSourceDetailTab] = useState<SourceDetailTab>('extracted');
   const [showRetrievalModal, setShowRetrievalModal] = useState<RetrievalStats | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [likedMap, setLikedMap] = useState<Record<number, 'like' | 'dislike'>>({});
@@ -144,6 +159,49 @@ export function ChatPage() {
     fetchDocuments();
     fetchConversations();
   }, [fetchDocuments, fetchConversations]);
+
+  useEffect(() => {
+    if (!selectedSourceDetail) {
+      setSourcePdfUrl(null);
+      setSourceChunk(null);
+      return;
+    }
+
+    setSourceDetailTab('extracted');
+    setSourceChunkLoading(true);
+
+    let objectUrl: string | null = null;
+    const loadSourceData = async () => {
+      try {
+        const token = await getToken();
+        if (!token) return;
+        const headers = { Authorization: `Bearer ${token}` };
+        const [fileResponse, chunksResponse] = await Promise.all([
+          fetch(`/api/documents/${selectedSourceDetail.documentId}/file`, { headers }),
+          fetch(`/api/documents/${selectedSourceDetail.documentId}/chunks`, { headers })
+        ]);
+
+        if (fileResponse.ok) {
+          objectUrl = URL.createObjectURL(await fileResponse.blob());
+          setSourcePdfUrl(objectUrl);
+        }
+        if (chunksResponse.ok) {
+          const data = await chunksResponse.json();
+          const chunk = (data.chunks || []).find((item: SourceChunk) => item._id === selectedSourceDetail.chunkId);
+          setSourceChunk(chunk || null);
+        }
+      } catch (err) {
+        console.error('Failed to load source details:', err);
+      } finally {
+        setSourceChunkLoading(false);
+      }
+    };
+
+    loadSourceData();
+    return () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [selectedSourceDetail, getToken]);
 
   // Load active conversation messages
   useEffect(() => {
@@ -762,81 +820,110 @@ export function ChatPage() {
       {/* Source Detail Modal */}
       {selectedSourceDetail && (
         <div className="modal-overlay" onClick={() => setSelectedSourceDetail(null)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div className="source-detail-modal" onClick={e => e.stopPropagation()}>
+            <div className="source-detail-header">
+              <div className="source-detail-title-row">
                 <div className="source-badge-number">{selectedSourceDetail.citationNumber}</div>
-                <h3>Source Details</h3>
+                <FileText size={18} color="#dc2626" />
+                <h3>{getDocName(selectedSourceDetail.documentId)}</h3>
               </div>
-              <button className="action-icon-btn" onClick={() => setSelectedSourceDetail(null)}>
+              <div className="source-detail-meta">
+                Chunk {selectedSourceDetail.chunkId.split(':').pop() || '1'}
+                <span>•</span>
+                Page {selectedSourceDetail.pageNumber}
+                <span>•</span>
+                <strong>{Math.round(selectedSourceDetail.score * 100)}% retrieval relevance</strong>
+              </div>
+              <button className="action-icon-btn source-detail-close" title="Close source details" onClick={() => setSelectedSourceDetail(null)}>
                 <X size={18} />
               </button>
             </div>
-            <div className="modal-body">
-              <div>
-                <span style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>DOCUMENT</span>
-                <div style={{ fontSize: 15, fontWeight: 600, color: '#0b1c30', marginTop: 2 }}>
-                  {getDocName(selectedSourceDetail.documentId)}
-                </div>
-              </div>
 
-              <div style={{ display: 'flex', gap: 20 }}>
-                <div>
-                  <span style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>PAGE</span>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#0b1c30' }}>
-                    Page {selectedSourceDetail.pageNumber}
+            <div className="source-detail-body">
+              <div className="source-pdf-panel">
+                {sourcePdfUrl ? (
+                  <iframe
+                    src={`${sourcePdfUrl}#page=${selectedSourceDetail.pageNumber}`}
+                    title={`Original PDF, page ${selectedSourceDetail.pageNumber}`}
+                    className="source-pdf-iframe"
+                  />
+                ) : (
+                  <div className="source-pdf-loading">
+                    <FileText size={28} />
+                    <span>Loading original PDF...</span>
                   </div>
-                </div>
-                <div>
-                  <span style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>CHUNK TYPE</span>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#0b1c30', textTransform: 'capitalize' }}>
-                    {selectedSourceDetail.type}
-                  </div>
-                </div>
-                <div>
-                  <span style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>SIMILARITY MATCH</span>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#065f46' }}>
-                    {Math.round(selectedSourceDetail.score * 100)}%
-                  </div>
-                </div>
+                )}
               </div>
-
-              <div>
-                <span style={{ fontSize: 12, color: '#64748b', fontWeight: 600 }}>EXTRACTED EVIDENCE</span>
-                <div
-                  style={{
-                    marginTop: 6,
-                    padding: 14,
-                    background: '#eff4ff',
-                    border: '1px solid #c3c6d7',
-                    borderRadius: 8,
-                    fontSize: 14,
-                    lineHeight: '22px',
-                    color: '#0b1c30',
-                    fontStyle: 'italic',
-                    whiteSpace: 'pre-wrap'
-                  }}
-                >
-                  "{selectedSourceDetail.excerpt}"
+              <div className="source-content-panel">
+                <div className="source-detail-tabs">
+                  <button
+                    type="button"
+                    className={`source-detail-tab ${sourceDetailTab === 'extracted' ? 'active' : ''}`}
+                    onClick={() => setSourceDetailTab('extracted')}
+                  >
+                    Extracted content
+                  </button>
+                  <button
+                    type="button"
+                    className={`source-detail-tab ${sourceDetailTab === 'summary' ? 'active' : ''}`}
+                    onClick={() => setSourceDetailTab('summary')}
+                  >
+                    AI summary
+                  </button>
+                </div>
+                <div className="source-detail-content">
+                  {sourceDetailTab === 'extracted' ? (
+                    <>
+                      <h4>Source Text (Chunk {selectedSourceDetail.chunkId.split(':').pop() || '1'})</h4>
+                      {sourceChunkLoading ? (
+                        <div className="source-evidence-text">Loading extracted content...</div>
+                      ) : (
+                        <>
+                          {sourceChunk?.imageBase64 && (
+                            <img
+                              className="source-chunk-image"
+                              src={`data:image/jpeg;base64,${sourceChunk.imageBase64}`}
+                              alt={`Extracted content from page ${selectedSourceDetail.pageNumber}`}
+                            />
+                          )}
+                          {sourceChunk?.tableHtml && (
+                            <div className="source-chunk-table" dangerouslySetInnerHTML={{ __html: sourceChunk.tableHtml }} />
+                          )}
+                          <pre className="source-raw-content">{sourceChunk?.text || selectedSourceDetail.excerpt}</pre>
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <h4>AI summary for retrieval</h4>
+                      {sourceChunkLoading ? (
+                        <div className="source-evidence-text">Loading AI summary...</div>
+                      ) : (() => {
+                        const summary = sourceChunk?.aiSummary?.trim() || sourceChunk?.retrievalSummary?.trim() || selectedSourceDetail.retrievalSummary?.trim();
+                        return summary ? (
+                          <div className="source-evidence-text source-summary-text">
+                            <ReactMarkdown>{summary}</ReactMarkdown>
+                          </div>
+                        ) : (
+                          <div className="source-evidence-text">
+                            This text chunk does not have a separate AI summary. Its extracted content is embedded directly for retrieval.
+                          </div>
+                        );
+                      })()}
+                    </>
+                  )}
                 </div>
               </div>
             </div>
-            <div className="modal-footer">
-              <button
-                className="btn-secondary"
-                onClick={() => setSelectedSourceDetail(null)}
-              >
-                Close
-              </button>
-              <button
-                className="btn-primary"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                onClick={() => {
-                  navigate(`/documents/${selectedSourceDetail.documentId}?chunkId=${selectedSourceDetail.chunkId}`);
-                }}
-              >
-                <span>Open in Document Explorer</span>
+
+            <div className="source-detail-footer">
+              <button className="btn-secondary" onClick={() => navigate(`/documents/${selectedSourceDetail.documentId}?chunkId=${selectedSourceDetail.chunkId}`)}>
+                Open in chunk explorer
                 <ExternalLink size={14} />
+              </button>
+              <button className="btn-primary" onClick={() => handleCopyText(selectedSourceDetail.excerpt, -1)}>
+                <Copy size={14} />
+                Copy source text
               </button>
             </div>
           </div>
