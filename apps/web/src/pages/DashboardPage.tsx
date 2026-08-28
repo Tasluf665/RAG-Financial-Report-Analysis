@@ -36,6 +36,7 @@ export function DashboardPage() {
   const [totalDocuments, setTotalDocuments] = useState(0);
   const totalPages = Math.max(1, Math.ceil(totalDocuments / PAGE_SIZE));
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isHeaderUploadOpen, setIsHeaderUploadOpen] = useState(false);
 
   // Debounce search; reset to page 1 whenever query changes
   useEffect(() => {
@@ -162,7 +163,7 @@ export function DashboardPage() {
           <h2 className="page-title">Your document workspace</h2>
           <p className="page-subtitle">Upload, process, and explore documents for AI-powered conversations.</p>
         </div>
-        <button className="btn-upload-header" onClick={() => window.scrollTo(0, 0)}>
+        <button className="btn-upload-header" onClick={() => setIsHeaderUploadOpen(true)}>
           <FileText size={16} />
           <span>Upload PDFs</span>
         </button>
@@ -209,6 +210,27 @@ export function DashboardPage() {
 
       <DocumentDropzone onUploadComplete={() => { setCurrentPage(1); fetchDocuments(); }} />
 
+      {isHeaderUploadOpen && (
+        <div className="sidebar-upload-overlay" onClick={() => setIsHeaderUploadOpen(false)}>
+          <div className="sidebar-upload-dialog" role="dialog" aria-modal="true" aria-labelledby="dashboard-upload-title" onClick={event => event.stopPropagation()}>
+            <div className="sidebar-upload-dialog-header">
+              <h2 id="dashboard-upload-title">Upload documents</h2>
+              <button type="button" className="sidebar-upload-close" title="Close upload dialog" aria-label="Close upload dialog" onClick={() => setIsHeaderUploadOpen(false)}>
+                ×
+              </button>
+            </div>
+            <DocumentDropzone
+              inputId="dashboard-header-file-upload"
+              onUploadComplete={() => {
+                setIsHeaderUploadOpen(false);
+                setCurrentPage(1);
+                fetchDocuments();
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       <div className="document-list">
         <div className="list-header">
           <h2 className="list-title">Recent documents</h2>
@@ -222,8 +244,6 @@ export function DashboardPage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <button className="btn-icon"><Layers size={16} /></button>
-            <button className="btn-icon"><HardDrive size={16} /></button>
           </div>
         </div>
 

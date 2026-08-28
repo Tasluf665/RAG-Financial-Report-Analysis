@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FileText, MessageSquare, Settings, UploadCloud, Menu } from 'lucide-react';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, FileText, MessageSquare, UploadCloud, Menu } from 'lucide-react';
 import { UserButton, useUser, useAuth } from '@clerk/clerk-react';
+import { DocumentDropzone } from '../Upload/DocumentDropzone';
 import './AppLayout.css';
 
 export function AppLayout() {
   const { user } = useUser();
   const { getToken } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
 
   React.useEffect(() => {
     const syncUser = async () => {
@@ -44,7 +47,7 @@ export function AppLayout() {
         </div>
 
         <div className="sidebar-upload">
-          <button className="btn-upload" onClick={() => window.scrollTo(0, 0)}>
+          <button className="btn-upload" onClick={() => setIsUploadOpen(true)}>
             <UploadCloud size={16} />
             <span>Upload Document</span>
           </button>
@@ -62,10 +65,6 @@ export function AppLayout() {
           <NavLink to="/chat" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
             <MessageSquare size={18} />
             <span>Chat</span>
-          </NavLink>
-          <NavLink to="/settings" className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
-            <Settings size={18} />
-            <span>Settings</span>
           </NavLink>
         </nav>
 
@@ -100,6 +99,26 @@ export function AppLayout() {
           <Outlet />
         </main>
       </div>
+
+      {isUploadOpen && (
+        <div className="sidebar-upload-overlay" onClick={() => setIsUploadOpen(false)}>
+          <div className="sidebar-upload-dialog" role="dialog" aria-modal="true" aria-labelledby="sidebar-upload-title" onClick={event => event.stopPropagation()}>
+            <div className="sidebar-upload-dialog-header">
+              <h2 id="sidebar-upload-title">Upload documents</h2>
+              <button type="button" className="sidebar-upload-close" title="Close upload dialog" aria-label="Close upload dialog" onClick={() => setIsUploadOpen(false)}>
+                ×
+              </button>
+            </div>
+            <DocumentDropzone
+              inputId="sidebar-file-upload"
+              onUploadComplete={() => {
+                setIsUploadOpen(false);
+                navigate('/dashboard');
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

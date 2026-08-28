@@ -3,7 +3,7 @@
   height: 100vh;
   overflow: hidden;
   background-color: #fcfdff;
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
 }
 
 /* Sidebar Styles */
@@ -15,7 +15,10 @@
   flex-direction: column;
   padding: 32px 24px;
   flex-shrink: 0;
-  transition: width 0.3s ease, padding 0.3s ease, opacity 0.3s ease;
+  transition:
+    width 0.3s ease,
+    padding 0.3s ease,
+    opacity 0.3s ease;
 }
 
 .app-sidebar.collapsed {
@@ -37,7 +40,7 @@
 
 .logo-title {
   color: #004ac6;
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: "Plus Jakarta Sans", sans-serif;
   font-size: 24px;
   font-weight: 700;
   letter-spacing: -0.6px;
@@ -169,4 +172,54 @@
   flex: 1;
   padding: 32px;
   overflow-y: auto;
+}
+
+.sidebar-upload-overlay {
+  align-items: center;
+  background: rgba(15, 23, 42, 0.5);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 24px;
+  position: fixed;
+  z-index: 1000;
+}
+
+.sidebar-upload-dialog {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.18);
+  max-width: 720px;
+  padding: 24px;
+  width: 100%;
+}
+
+.sidebar-upload-dialog-header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.sidebar-upload-dialog-header h2 {
+  color: #0b1c30;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 20px;
+  margin: 0;
+}
+
+.sidebar-upload-close {
+  color: #64748b;
+  font-size: 26px;
+  line-height: 1;
+  padding: 2px 6px;
+}
+
+.sidebar-upload-close:hover,
+.sidebar-upload-close:focus-visible {
+  color: #0b1c30;
+}
+
+.sidebar-upload-dialog .dropzone-wrapper {
+  margin-bottom: 0;
 }

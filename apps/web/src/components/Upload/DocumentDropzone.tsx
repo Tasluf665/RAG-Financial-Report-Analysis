@@ -5,9 +5,10 @@ import './DocumentDropzone.css';
 
 interface DocumentDropzoneProps {
   onUploadComplete: () => void;
+  inputId?: string;
 }
 
-export function DocumentDropzone({ onUploadComplete }: DocumentDropzoneProps) {
+export function DocumentDropzone({ onUploadComplete, inputId = 'file-upload' }: DocumentDropzoneProps) {
   const { getToken } = useAuth();
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -94,7 +95,7 @@ export function DocumentDropzone({ onUploadComplete }: DocumentDropzoneProps) {
           accept="application/pdf" 
           onChange={handleFileInput} 
           className="file-input" 
-          id="file-upload"
+          id={inputId}
           disabled={isUploading}
         />
         <div className="dropzone-content">
@@ -104,7 +105,7 @@ export function DocumentDropzone({ onUploadComplete }: DocumentDropzoneProps) {
           <h3 className="dropzone-title">Drop PDFs here or browse files</h3>
           <p className="dropzone-subtitle">PDF files only · Maximum 50 MB per file · Upload multiple files</p>
           
-          <label htmlFor="file-upload" className="dropzone-btn">
+          <label htmlFor={inputId} className="dropzone-btn">
             Browse files
           </label>
 

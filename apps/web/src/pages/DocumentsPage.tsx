@@ -324,25 +324,7 @@ export function DocumentsPage() {
           </div>
         </div>
 
-        <div className="docs-toolbar-right">
-          {/* View toggle */}
-          <div className="docs-view-toggle">
-            <button
-              className={`docs-view-btn ${viewMode === 'list' ? 'active' : ''}`}
-              onClick={() => setViewMode('list')}
-              title="List view"
-            >
-              <List size={15} />
-            </button>
-            <button
-              className={`docs-view-btn ${viewMode === 'grid' ? 'active' : ''}`}
-              onClick={() => setViewMode('grid')}
-              title="Grid view"
-            >
-              <LayoutGrid size={17} />
-            </button>
-          </div>
-        </div>
+
       </div>
 
       {/* ── Table ── */}
