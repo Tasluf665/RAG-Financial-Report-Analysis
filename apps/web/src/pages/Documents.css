@@ -647,6 +647,30 @@
   color: #737686;
 }
 
+@media (max-width: 1024px) {
+  .docs-header-section {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .docs-toolbar-section {
+    align-items: stretch;
+  }
+
+  .docs-toolbar-left {
+    flex-wrap: wrap;
+  }
+
+  .docs-table-section {
+    overflow-x: auto;
+  }
+
+  .docs-table {
+    min-width: 760px;
+  }
+}
+
 @media (max-width: 640px) {
   .docs-th,
   .docs-td {
@@ -680,5 +704,62 @@
 
   .docs-filename {
     max-width: 200px;
+  }
+
+  .docs-header-section {
+    flex-direction: column;
+    padding-bottom: 24px;
+  }
+
+  .docs-title {
+    font-size: 28px;
+    line-height: 36px;
+  }
+
+  .docs-subtitle {
+    font-size: 14px;
+    line-height: 20px;
+  }
+
+  .docs-upload-btn {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .docs-toolbar-section {
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding: 12px;
+  }
+
+  .docs-toolbar-left {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .docs-search-box,
+  .docs-filter-btn {
+    width: 100%;
+  }
+
+  .docs-toolbar-divider {
+    display: none;
+  }
+
+  .docs-dropdown-menu {
+    right: 0;
+  }
+
+  .docs-table-footer {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px 16px;
+  }
+
+  .docs-pagination-controls {
+    align-self: flex-end;
   }
 }
