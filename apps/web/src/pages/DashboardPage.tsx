@@ -271,9 +271,11 @@ export function DashboardPage() {
               <tbody>
                 {documents.map((doc) => (
                   <tr key={doc._id} onClick={() => doc.status === 'ready' && navigate(`/documents/${doc._id}`)} className={doc.status === 'ready' ? 'clickable-row' : ''}>
-                    <td className="doc-name">
-                      <FileText size={16} className="text-muted" />
-                      <span>{doc.originalFilename}</span>
+                    <td className="doc-name-cell">
+                      <div className="doc-name">
+                        <FileText size={16} className="text-muted" />
+                        <span>{doc.originalFilename}</span>
+                      </div>
                     </td>
                     <td>{doc.pageCount || '-'}</td>
                     <td>{doc.stats?.chunkCount || '-'}</td>

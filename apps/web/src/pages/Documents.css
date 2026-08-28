@@ -646,3 +646,39 @@
   font-size: 13px;
   color: #737686;
 }
+
+@media (max-width: 640px) {
+  .docs-th,
+  .docs-td {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .docs-th--name {
+    min-width: 200px;
+  }
+
+  .docs-th--num {
+    width: 64px;
+  }
+
+  .docs-th--status {
+    width: 50px;
+  }
+
+  .docs-th--date {
+    width: 110px;
+  }
+
+  .docs-th--actions {
+    width: 48px;
+  }
+
+  .docs-file-cell {
+    gap: 8px;
+  }
+
+  .docs-filename {
+    max-width: 200px;
+  }
+}

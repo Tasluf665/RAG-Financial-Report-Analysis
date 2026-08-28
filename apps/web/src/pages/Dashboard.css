@@ -214,7 +214,6 @@
   gap: 12px;
   font-weight: 500;
   color: #2b2d38;
-  margin-top: 11px;
 }
 
 .status-badge {
@@ -511,11 +510,19 @@
     overflow-x: auto;
   }
 
+  .doc-table th:nth-child(2),
+  .doc-table td:nth-child(2),
+  .doc-table th:nth-child(5),
+  .doc-table td:nth-child(5) {
+    display: none;
+  }
+
   .doc-name {
-    margin-top: 0;
+    min-width: 0;
   }
 
   .doc-name span {
+    max-width: 10ch;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
