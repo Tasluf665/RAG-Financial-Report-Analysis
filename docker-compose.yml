@@ -1,0 +1,50 @@
+services:
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    env_file:
+      - ./apps/web/.env
+    environment:
+      VITE_API_PROXY_TARGET: http://api-node:4000
+    depends_on:
+      api-node:
+        condition: service_started
+
+  api-node:
+    build:
+      context: ./apps/api-node
+      dockerfile: Dockerfile
+    ports:
+      - "4000:4000"
+    env_file:
+      - ./apps/api-node/.env
+    environment:
+      PORT: 4000
+      RAG_HOST: rag-python
+      RAG_PORT: 8000
+      PYTHON_RAG_SERVICE_URL: http://rag-python:8000
+      LOCAL_STORAGE_ROOT: /app/storage
+    volumes:
+      - ./apps/api-node/storage:/app/storage
+    depends_on:
+      rag-python:
+        condition: service_started
+
+  rag-python:
+    build:
+      context: ./apps/rag-python
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./apps/rag-python/.env
+    environment:
+      RAG_HOST: 0.0.0.0
+      RAG_PORT: 8000
+      LOCAL_STORAGE_ROOT: /app/storage
+      NODE_API_BASE_URL: http://api-node:4000
+    volumes:
+      - ./apps/api-node/storage:/app/storage
