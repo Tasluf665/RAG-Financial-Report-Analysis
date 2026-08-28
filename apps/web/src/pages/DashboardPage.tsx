@@ -34,6 +34,9 @@ export function DashboardPage() {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [totalDocuments, setTotalDocuments] = useState(0);
+  const [totalChunks, setTotalChunks] = useState(0);
+  const [totalImages, setTotalImages] = useState(0);
+  const [totalTables, setTotalTables] = useState(0);
   const totalPages = Math.max(1, Math.ceil(totalDocuments / PAGE_SIZE));
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isHeaderUploadOpen, setIsHeaderUploadOpen] = useState(false);
@@ -65,6 +68,11 @@ export function DashboardPage() {
         setDocuments(payload.items ?? payload.data ?? []);
         if (typeof payload.total === 'number') {
           setTotalDocuments(payload.total);
+        }
+        if (payload.metrics) {
+          setTotalChunks(payload.metrics.chunkCount ?? 0);
+          setTotalImages(payload.metrics.imageCount ?? 0);
+          setTotalTables(payload.metrics.tableCount ?? 0);
         }
       }
     } catch (error) {
@@ -146,10 +154,6 @@ export function DashboardPage() {
     }
     return status.charAt(0).toUpperCase() + status.slice(1);
   };
-
-  const totalChunks = documents.reduce((sum, doc) => sum + (doc.stats?.chunkCount || 0), 0);
-  const totalImages = documents.reduce((sum, doc) => sum + (doc.stats?.imageCount || 0), 0);
-  const totalTables = documents.reduce((sum, doc) => sum + (doc.stats?.tableCount || 0), 0);
 
   const handlePrevPage = () => setCurrentPage(p => Math.max(1, p - 1));
   const handleNextPage = () => setCurrentPage(p => Math.min(totalPages, p + 1));

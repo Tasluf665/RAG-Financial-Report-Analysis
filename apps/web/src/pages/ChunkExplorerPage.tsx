@@ -172,9 +172,6 @@ export function ChunkExplorerPage() {
             <span className="doc-status-badge badge-ready">Ready</span>
           </div>
           <div className="doc-header-actions">
-            <button className="btn-chat-primary">
-              <MessageSquare size={16} /> Chat with this document
-            </button>
             <button
               className="btn-delete-doc"
               onClick={handleDeleteDocument}

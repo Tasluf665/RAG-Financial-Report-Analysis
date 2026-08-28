@@ -70,13 +70,26 @@ export const listDocuments = async (req: Request, res: Response): Promise<void> 
       query.originalFilename = { $regex: search.trim(), $options: 'i' };
     }
 
-    const [docs, total] = await Promise.all([
+    const [docs, total, metricTotals] = await Promise.all([
       DocumentModel.find(query)
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(pageSize),
       DocumentModel.countDocuments(query),
+      DocumentModel.aggregate([
+        { $match: query },
+        {
+          $group: {
+            _id: null,
+            chunkCount: { $sum: { $ifNull: ['$stats.chunkCount', 0] } },
+            imageCount: { $sum: { $ifNull: ['$stats.imageCount', 0] } },
+            tableCount: { $sum: { $ifNull: ['$stats.tableCount', 0] } }
+          }
+        }
+      ])
     ]);
+
+    const metrics = metricTotals[0] || { chunkCount: 0, imageCount: 0, tableCount: 0 };
 
     res.json({
       status: 'success',
@@ -85,6 +98,11 @@ export const listDocuments = async (req: Request, res: Response): Promise<void> 
       page,
       pageSize,
       total,
+      metrics: {
+        chunkCount: metrics.chunkCount,
+        imageCount: metrics.imageCount,
+        tableCount: metrics.tableCount
+      },
       // Legacy field kept for backward compatibility
       data: docs,
     });

@@ -159,7 +159,6 @@ export function DocumentsPage() {
   useEffect(() => { setCurrentPage(1); }, [statusFilter, sortBy]);
 
   const fetchDocuments = useCallback(async () => {
-    setLoading(true);
     try {
       const token = await getToken();
       const params = new URLSearchParams({
@@ -177,12 +176,21 @@ export function DocumentsPage() {
       }
     } catch (e) {
       console.error(e);
-    } finally {
-      setLoading(false);
     }
   }, [getToken, currentPage, debouncedSearch]);
 
-  useEffect(() => { fetchDocuments(); }, [fetchDocuments]);
+  useEffect(() => {
+    setLoading(true);
+    fetchDocuments().finally(() => setLoading(false));
+  }, [fetchDocuments]);
+
+  useEffect(() => {
+    const hasProcessing = documents.some(d => d.status.startsWith('processing') || d.status === 'queued');
+    if (!hasProcessing) return;
+
+    const intervalId = setInterval(fetchDocuments, 3000);
+    return () => clearInterval(intervalId);
+  }, [documents, fetchDocuments]);
 
   // Client-side status filter + sort
   const filtered = documents
