@@ -921,10 +921,6 @@ export function ChatPage() {
                 Open in chunk explorer
                 <ExternalLink size={14} />
               </button>
-              <button className="btn-primary" onClick={() => handleCopyText(selectedSourceDetail.excerpt, -1)}>
-                <Copy size={14} />
-                Copy source text
-              </button>
             </div>
           </div>
         </div>
